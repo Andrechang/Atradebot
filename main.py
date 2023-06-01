@@ -6,36 +6,44 @@ user input: [x]
     balance (INIT_CASH)
     time horizon (TIMEFRAME)
 
-chrono job:
+chrono job:[x]
     set to run analysis every month
     set to update news every day
 
 collect data:
     dynamic data: check every day
-    - check news every day
-    - calculate sentiment for decision during specific dates
+    - check news every day[x]
+    - calculate sentiment for decision during specific dates[x]
 
     static data: check when need decision
-    - historical data
+    - historical data <<--
     - balance sheet
 
-decision: given table of stocks or areas to invest. rank best to buy and sell 
-    - sentiment
-    - history info
-    - balance sheet
-    - finance metrics
-    - personel (linkedin)
+    decision: given table of stocks or areas to invest 
+        - news sentiment[x]
+        - historic data info
+        - balance sheet
+        - personel (linkedin)
+
+
+decision algorithm: rank best to buy and sell
+    - simple average of news sentiment
+    - ask gpt
+    - fundamental analysis
+    - technical analysis
 
 more stuff:
-    - buy/sell/hold
+    - buy/hold [x]
+    - sell
     - add/swap to new stocks
     - look into ETFs
 
 output:
-    average-cost stat output
-    alert when to put money every month
-    graph of prediction
-    optional: alpaca api to auto-execute trade
+    - average-cost stat output profile files .csv [x]
+    - email alert when to put money every month
+    - graph of prediction
+    - optional: alpaca api to auto-execute trade
+
 '''
 
 import torch
@@ -167,7 +175,7 @@ class TradingBot:
         self.sentiment_analyzer = pipeline("sentiment-analysis", model=finbert, tokenizer=tokenizer)
 
     # collect google search text and sentiment score
-    def get_google_news(self, query, num_results=10, max_length=1500):
+    def get_google_news(self, query, num_results=10, max_length=512):
         headers = {
                 "User-Agent":
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36"
@@ -188,9 +196,9 @@ class TradingBot:
             if html_text:
                 sentences = tokenize.sent_tokenize(html_text)
                 # truncate sentences that are too long
-                for i,s in enumerate(sentences):
-                    if len(s)>max_length:
-                        sentences[i]=sentences[i][:max_length]
+                for i, s in enumerate(sentences):
+                    if len(s) > max_length:
+                        sentences[i] = sentences[i][:max_length]
 
                 sentiment = self.sentiment_analyzer(sentences)
                 sum = 0
@@ -230,7 +238,7 @@ class TradingBot:
             # Time,Name,Text,Score,Link
             for gnew in gnews:
                 self.news = pd_append(self.news, {'Time': gnew["date"], 'Name': stock, 
-                    'Text': gnew["text"], 'Score': gnew["sentiment"], 'Link': gnew["link"]})
+                    'Text': gnew["text"], 'Score': gnew["sentiment"], 'Link': gnew["link"], 'Snippet': gnew["snippet"]})
 
         if os.path.isfile(PATH_N): #concat with old news
             old_news = pd.read_csv(PATH_N)
@@ -260,13 +268,9 @@ class TradingBot:
         self.stock_rank = {}
         # self.get_stats()
         # TODO: +historical data analysis
-        # TODO: gpt analysis
-        # openai.Completion.create(
-        #     model="text-davinci-003",
-        #     prompt="Say this is a test",
-        #     max_tokens=7,
-        #     temperature=0
-        # )
+
+        # TODO: AutoGPT? FinNLP analysis
+        
 
         # simple mean of sentiment score ranking
         mean_score = []
