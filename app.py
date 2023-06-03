@@ -56,21 +56,21 @@ question = ["1- What is your age group?",
 indexes = []
 for iop, option in enumerate(options):
     opt = st.radio(question[iop], option)
-    st.write("index:", option.index(opt))
+    # st.write("index:", option.index(opt))
     idx = option.index(opt)
     indexes.append(idx)
 
-amount = st.text_input('5- How much are you planning to invest?', ' ')
+amount = st.text_input('5- How much are you planning to invest?', '0')
 if not amount.isnumeric():
     st.write("write a number for question 5")
-timeh = st.text_input('6- For how many month are you planning to invest?', ' ')
+timeh = st.text_input('6- For how many month are you planning to invest?', '0')
 if not timeh.isnumeric():
     st.write("write a number for question 6")
 
 # Every form must have a submit button.
 submitted = st.button("Submit")
 if submitted and amount.isnumeric() and timeh.isnumeric():
-    risk = calc_risk(indexes, amount, timeh)
+    risk = calc_risk(indexes, int(amount), int(timeh))
     st.session_state.qa_answers = {"risk":risk, "amount":amount, "time":timeh}
     switch_page("page2")
 
