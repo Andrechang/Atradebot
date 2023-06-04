@@ -1,67 +1,12 @@
-
-
-''' TODO list:
-
-user input: [x]
-    balance (INIT_CASH)
-    time horizon (TIMEFRAME)
-
-chrono job:[x]
-    set to run analysis every month
-    set to update news every day
-
-collect data:
-    dynamic data: check every day
-    - check news every day[x]
-    - calculate sentiment for decision during specific dates[x]
-
-    static data: check when need decision
-    - historical data <<--
-    - balance sheet
-
-    decision: given table of stocks or areas to invest 
-        - news sentiment[x]
-        - historic data info
-        - balance sheet
-        - personel (linkedin)
-
-
-decision algorithm: rank best to buy and sell
-    - simple average of news sentiment
-    - ask gpt
-    - fundamental analysis
-    - technical analysis
-
-more stuff:
-    - buy/hold [x]
-    - sell
-    - add/swap to new stocks
-    - look into ETFs
-
-output:
-    - average-cost stat output profile files .csv [x]
-    - email alert when to put money every month
-    - graph of prediction
-    - optional: alpaca api to auto-execute trade
-
-'''
-
-import torch
 import pandas as pd
 import tweepy
-import re 
-from transformers import AutoModelForImageClassification, AutoImageProcessor
-import cv2
-from PIL import Image, ImageDraw
 from argparse import ArgumentParser
 import os
 from datetime import date, datetime
 import yfinance as yf
 import shutil 
 import math
-
-import json
-import argparse
+import yaml
 import requests
 from bs4 import BeautifulSoup
 import trafilatura
@@ -69,93 +14,103 @@ from nltk import tokenize
 from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import pipeline
 from dateutil.relativedelta import relativedelta
-from tqdm import tqdm   
-import openai
+from tqdm import tqdm 
 
-# user finance plan input
-# TODO: add saved income to balance
-TIMEFRAME = 1*365 # days: 1yrs 
-INIT_CASH = 10000 # investment 50k over a year
-INTERVAL_ANALYSIS = 15 # days to analyze and invest 
-INVEST_AMOUNT = INIT_CASH/(TIMEFRAME/INTERVAL_ANALYSIS) # amount to invest every INTERVAL_ANALYSIS days
-STOCKS2CHECK = ['AAPL','ABBV','AMZN','ASML','BHP','COST','GOOGL','JNJ','KLAC','LLY','LRCX','MSFT','NVDA','TSLA'] # list of stocks to check
-
-# profile data
-DIR = 'mydata'
-PATH_P = os.path.join(DIR, 'myportifolio.csv')# Name,Qnt,UCost (unit cost),BaseCost,Price (current price),Value (current Value), LongGain (Qnt), ShortGain (Qnt)
-PATH_T = os.path.join(DIR, 'mytaxtime.csv')# Name, TB (time bought), Qnt
-PATH_S = os.path.join(DIR, 'mysold.csv')# Name, TS (time sold), Qnt, Proceed
-PATH_B = os.path.join(DIR, 'mybalance.csv')# Time,Cash,Stock,Total
-PATH_N = os.path.join(DIR, 'news.csv')# Time,Name,Text,Score,Link
 DATE_FORMAT = "%Y-%m-%d"
-
-
-def get_arg(raw_args=None):
-    parser = ArgumentParser(description="parameters")
-    parser.add_argument('-m', '--mode', type=str,
-                        default='run', help='Modes: init | run | debug ')
-    args = parser.parse_args(raw_args)
-    return args
-
 
 def pd_append(df, dict_d):
     return pd.concat([df, pd.DataFrame.from_records([dict_d])])
-
-#create a new profile
-def new_profile():
-    if not os.path.exists(DIR):
-        os.mkdir(DIR)
-    dfp = pd.DataFrame(columns=['Name','Qnt','UCost','BaseCost','Price','Value','LongGain','ShortGain'])
-    for stock in STOCKS2CHECK:
-        dfp = pd_append(dfp, {'Name': stock, 'Qnt': 0, 'UCost': 0, 'BaseCost': 0, 'Price': 0, 'Value': 0, 'LongGain': 0, 'ShortGain': 0})
-    dft = pd.DataFrame(columns=['Name','TB','Qnt'])
-    dfs = pd.DataFrame(columns=['Name','TS','Qnt','Proceed'])
-    dfb = pd.DataFrame(columns=['Time','Cash','Stock','Total'])
-    dfb = pd_append(dfb, {'Time': date.today().strftime(DATE_FORMAT), 'Cash': INIT_CASH, 'Stock': 0, 'Total': INIT_CASH})
-    news = pd.DataFrame(columns=['Time','Name','Text','Score','Link'])
-    news.to_csv(PATH_N, index=False)
-    dfp.to_csv(PATH_P, index=False)
-    dft.to_csv(PATH_T, index=False)
-    dfs.to_csv(PATH_S, index=False)
-    dfb.to_csv(PATH_B, index=False)
-    print("New profile created. Plan to invest {}$ over {} days. Each interval of {} days will invest {}$ ".format(INIT_CASH, 
-        TIMEFRAME, INTERVAL_ANALYSIS, INVEST_AMOUNT))
-
-#save backup
-def save_back():
-    dir_bk = DIR + str(datetime.today().strftime(DATE_FORMAT))
-    if not os.path.exists(dir_bk):
-        os.mkdir(dir_bk)
-    shutil.copy(PATH_P, dir_bk)         
-    shutil.copy(PATH_T, dir_bk)  
-    shutil.copy(PATH_B, dir_bk)  
-    shutil.copy(PATH_S, dir_bk)  
-    shutil.copy(PATH_N, dir_bk) 
-    print("Backup saved at {}".format(dir_bk))
 
 def get_price(stock):
     ticker = yf.Ticker(stock).info
     return ticker['regularMarketOpen']
 
+
+
+# user finance plan input
+# TODO: add saved income to balance
+
+# holdings: Name, Qnt, UCost (unit cost), BaseCost, Price (current price), Value (current Value), LongGain (Qnt), ShortGain (Qnt)
+# activity: Name, type (buy/sell), TB (time bought), Qnt, Proceed
+# balance: Time, Cash, Stock, Total
+# news: Time, Name, Text, Score, Link
+def get_config(cfg_file):
+    with open(cfg_file, 'r') as ymlfile:
+        cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
+    return cfg
+
+def get_arg(raw_args=None):
+    parser = ArgumentParser(description="parameters")
+    parser.add_argument('-m', '--mode', type=str,
+                        default='debug', help='Modes: run | debug ')
+    parser.add_argument('-c', '--cfg', type=str,
+                        default='default.yaml', help='Config file')
+    args = parser.parse_args(raw_args)
+    config = get_config(args.cfg)
+    config.update(vars(args))
+    return args, config
+
 class TradingBot:
-    def __init__(self, args):
-        self.dfp = pd.read_csv(PATH_P) # portifolio
-        self.dfp.fillna(0, inplace=True)
-        self.dft = pd.read_csv(PATH_T) # tax time
-        self.dfb = pd.read_csv(PATH_B) # balance
-        self.dfs = pd.read_csv(PATH_S) # sold
-        
-        self.news = pd.DataFrame(columns=['Time','Name','Text','Score','Link'])#news for stocks
+    def __init__(self, cfg):
+        self.config = cfg
+        # amount to invest every INTERVAL_ANALYSIS days
+        self.invest_amount = self.config['INIT_CASH']/(self.config['TIMEFRAME']/self.config['INTERVAL_ANALYSIS']) 
+        self.load_profile()
+
         self.stats = {} #stats for stocks: dict {stock: history data}
+        self.stock_rank = {} #ranked stocks: dict{stock: {decision: buy/sell,  news: [ranked news], info: "analysis" } }
+        
+        self.init_model()#init sentiment analysis model
 
-        self.stock_rank = {} #ranked stocks: dict{stock: {decision: buy/sell,  news: [ranked news], info: "gpt analysis" } }
+    # PROFILE SAVING===================================================================================================
+    
+    def load_profile(self):
+        if not os.path.isfile(self.config['SAVE_FILE']): #create a new profile
+            self.holdings = pd.DataFrame(columns=['Name','Qnt','UCost','BaseCost','Price','Value','LongGain','ShortGain']) 
+            for stock in self.config['STOCKS2CHECK']:
+                self.holdings = pd_append(self.holdings, {'Name': stock, 'Qnt': 0, 'UCost': 0, 'BaseCost': 0, 
+                    'Price': 0, 'Value': 0, 'LongGain': 0, 'ShortGain': 0})
+            self.activity = pd.DataFrame(columns=['Name', 'Type','Time','Qnt','Value'])
+            self.balance = pd.DataFrame(columns=['Time','Cash','Stock','Total'])
+            self.balance = pd_append(self.balance, {'Time': date.today().strftime(DATE_FORMAT), 
+                'Cash': self.config['INIT_CASH'], 'Stock': 0, 'Total': self.config['INIT_CASH']})
+            self.news = pd.DataFrame(columns=['Time','Name','Text','Score','Link','Snippet'])
+            with pd.ExcelWriter(self.config['SAVE_FILE']) as writer:
+                self.holdings.to_excel(writer, float_format="%.2f", sheet_name='holdings', index=False)
+                self.activity.to_excel(writer, float_format="%.2f", sheet_name='activity', index=False)
+                self.balance.to_excel(writer, float_format="%.2f", sheet_name='balance', index=False)
+                self.news.to_excel(writer, float_format="%.2f", sheet_name='news', index=False)
+            print("New profile created. Plan to invest {}$ over {} days. Each interval of {} days will invest {}$ ".format(
+                self.config['INIT_CASH'], 
+                self.config['TIMEFRAME'], 
+                self.config['INTERVAL_ANALYSIS'], 
+                self.config['INVEST_AMOUNT']))
+        else: #reload data from profile
+            with open(self.config['SAVE_FILE'], 'rb') as reader:
+                self.holdings = pd.read_excel(reader, sheet_name='holdings')
+                self.holdings.fillna(0, inplace=True)
+                self.activity = pd.read_excel(reader, sheet_name='activity') 
+                self.balance = pd.read_excel(reader, sheet_name='balance')
+                self.news = pd.read_excel(reader, sheet_name='news')
 
-        self.general_news = {} # TODO: general info and general finance data (monitor Indexes): dict{bull/bear:[news]}
-        # self.reload_news()
-        # self.init_tweet()
-        self.init_model()
+    #save backup
+    def save_back(self):
+        dir_bk = 'backup' + str(datetime.today().strftime(DATE_FORMAT))
+        if not os.path.exists(dir_bk):
+            os.mkdir(dir_bk)
+        shutil.copy(self.config['SAVE_FILE'], dir_bk)         
+        print("Backup saved at {}".format(dir_bk))
+
+        #update files
+        with pd.ExcelWriter(self.config['SAVE_FILE']) as writer:
+            self.holdings.to_excel(writer, float_format="%.2f", sheet_name='holdings', index=False)
+            self.activity.to_excel(writer, float_format="%.2f", sheet_name='activity', index=False)
+            self.balance.to_excel(writer, float_format="%.2f", sheet_name='balance', index=False)
+            self.news.to_excel(writer, float_format="%.2f", sheet_name='news', index=False)
+        print("Updated files at {}".format(self.config['SAVE_FILE']))
 
 
+    # INFO GATHERING===================================================================================================
     # Authenticate to Twitter
     def init_tweet(self):
         auth = tweepy.OAuthHandler("UkIxHV1myPKpxf2bEwd1WCmM1", "ifh3rDZDHG8C4tu2JsgtgDbQGD77WgkdgL5t1P7zyHp3c9Dero")
@@ -226,9 +181,8 @@ class TradingBot:
         return news_results, search_req
 
     # get the news from: google, TODO yfinance, twitter, 
-    # save news into PATH_N using pandas, set: self.news
     def get_news(self):
-        for stock in tqdm(list(self.dfp['Name'])):
+        for stock in tqdm(list(self.holdings['Name'])):
             #twitter
             # posts = self.api.user_timeline(screen_name="BillGates", count = 100, lang ="en", tweet_mode="extended")
             # df = pd.DataFrame([tweet.full_text for tweet in posts], columns=['Tweets'])
@@ -239,16 +193,8 @@ class TradingBot:
             for gnew in gnews:
                 self.news = pd_append(self.news, {'Time': gnew["date"], 'Name': stock, 
                     'Text': gnew["text"], 'Score': gnew["sentiment"], 'Link': gnew["link"], 'Snippet': gnew["snippet"]})
-
-        if os.path.isfile(PATH_N): #concat with old news
-            old_news = pd.read_csv(PATH_N)
-            self.news = pd.concat([old_news, self.news])        
-
         #filter repeated news
         self.news = self.news.drop_duplicates(subset=['Text'])
-
-        self.news.to_csv(PATH_N, index=False) #save news
-        print("News saved in: ", PATH_N)
 
     # get the historical data
     # set: self.stats
@@ -256,12 +202,12 @@ class TradingBot:
         end_date = date.today().strftime(DATE_FORMAT)
         past_year = date.today() - relativedelta(years=2)
         start_date = past_year.strftime(DATE_FORMAT) # Example start date in yyyy-mm-dd format
-        for stock in list(self.dfp['Name']):
+        for stock in list(self.holdings['Name']):
             #get historical data
             df_data = yf.download(stock, start=start_date, end=end_date)
             self.stats[stock] = df_data
         
-
+    # STRATEGY===================================================================================================
     # rank stocks based on data
     # return: dict{stock: {decision: buy/sell, info: "gpt analysis" } }
     def get_rank(self):
@@ -274,48 +220,57 @@ class TradingBot:
 
         # simple mean of sentiment score ranking
         mean_score = []
-        for stock in list(self.dfp['Name']):
+        for stock in list(self.holdings['Name']):
             filtered_df = self.news[self.news['Name'] == stock]
-            # filtered_df.sort_values(by='Score', ascending=False)
             mean = filtered_df['Score'].mean()
-            mean_score.append((stock,mean))
+            mean_score.append((stock, mean))
         mean_score.sort(key=lambda x: x[1], reverse=True)
         # distribute money based on ranking
-        spend = INVEST_AMOUNT
+        spend = self.invest_amount
         distrib = [0.6, 0.3, 0.2, 0.1]
         idx = 0
         while spend > 0:
             price = get_price(mean_score[idx][0])
-            s = INVEST_AMOUNT*distrib[idx]
+            s = self.invest_amount*distrib[idx]
             s = math.ceil(s/price)
             spend -= s*price
             self.stock_rank[mean_score[idx][0]] = {'decision': s}
 
-
+    # EXECUTION===================================================================================================
     #execute buy/sell suggestions from get_rank
     def execute(self, dict_rank):
 
-        for stock, value in dict_rank.values():
-            assert stock in list(self.dfp['Name']), "Stock not in portifolio"
-            idx = self.dfp.loc[self.dfp['Name'] == stock].index[0]
-            ticker = yf.Ticker(stock).info
-            price = self.dfp.at[idx, 'Price'] = ticker['regularMarketOpen']
+        for stock, value in dict_rank.items():
+            
+            if stock not in list(self.holdings['Name']): # add new stock
+                self.holdings = pd_append(self.holdings, {'Name': stock, 'Qnt': 0, 'UCost': 0, 'BaseCost': 0, 
+                    'Price': 0, 'Value': 0, 'LongGain': 0, 'ShortGain': 0})
+
+            stock_idx = self.holdings.loc[self.holdings['Name'] == stock].index[0]
+            price = self.holdings.at[stock_idx, 'Price'] = get_price(stock)
+
             if value['decision'] > 0: #buy
-                cost = price*value['decision']
-                if cost > self.dfb.at[0, 'Cash']: # check balance
+                asset_value = price*value['decision']
+                if asset_value > self.balance.at[0, 'Cash']: # check balance
                     print("Not enough money")
-                    break
+                    continue
                 else:
-                    self.dft = pd_append(self.dft, {'Name': stock, 'TB': date.today().strftime(DATE_FORMAT), 'Qnt': value['decision']})
-                    self.dfp.at[idx, 'BaseCost'] += cost
-                    self.dfb.at[0, 'Cash'] -= cost
+                    self.activity = pd_append(self.activity, {'Name': stock, 'Type': 'buy', 'Time': date.today().strftime(DATE_FORMAT), 
+                        'Qnt': value['decision'], 'Value': asset_value})
+                    self.holdings.at[stock_idx, 'BaseCost'] += asset_value
+                    self.holdings.at[stock_idx, 'Qnt'] += value['decision']
+                    self.balance.at[0, 'Cash'] -= asset_value
+
             elif value['decision'] < 0: #sell
-                proceed = price*value['decision']
-                #get oldest qnt and reduce it
-                self.dfs = pd_append(self.dfs, {'Name': stock, 'TS': date.today().strftime(DATE_FORMAT), 
-                    'Qnt': value['decision'], 'Proceed': proceed})
-                self.dfp.at[idx, 'BaseCost'] -= proceed
-                self.dfb.at[0, 'Cash'] += proceed
+                #TODO: get oldest qnt and reduce it
+                holding_qnt = self.holdings.at[stock_idx, 'Qnt']
+                qnt = abs(value['decision']) if abs(value['decision']) <= holding_qnt else holding_qnt
+                asset_value = price*qnt
+                self.activity = pd_append(self.activity, {'Name': stock, 'Type': 'sell', 'Time': date.today().strftime(DATE_FORMAT), 
+                    'Qnt': qnt, 'Value': asset_value})
+                self.holdings.at[stock_idx, 'BaseCost'] -= asset_value
+                self.holdings.at[stock_idx, 'Qnt'] -= qnt
+                self.balance.at[0, 'Cash'] += asset_value
                 
         # update portifolio
         self.update_all()
@@ -326,64 +281,50 @@ class TradingBot:
     #update calculated numbers in files after execute 
     def update_all(self):
         # check portifolio numbers
-        for index, row in self.dfp.iterrows():
+        for index, row in self.holdings.iterrows():
             name = row['Name']
-            self.dfp.at[index, 'Price'] = get_price(name)
-            self.dfp.at[index, 'UCost'] = self.dfp.at[index, 'BaseCost']/self.dfp.at[index, 'Qnt'] if self.dfp.at[index, 'Qnt'] > 0 else 0 # UCost=BaseCost/Qnt
-            self.dfp.at[index, 'Value'] = self.dfp.at[index, 'Price']*self.dfp.at[index, 'Qnt']# Value=Price*Qnt
-            # check taxtime Qnt
-            # ShortGain=Qnt-BaseCost
-            # LongGain=Qnt-BaseCost
+            self.holdings.at[index, 'Price'] = get_price(name)
+            holding_qnt = self.holdings.at[index, 'Qnt']
+            self.holdings.at[index, 'UCost'] = self.holdings.at[index, 'BaseCost']/holding_qnt if holding_qnt > 0 else 0 # UCost=BaseCost/Qnt
+            self.holdings.at[index, 'Value'] = self.holdings.at[index, 'Price']*holding_qnt# Value=Price*Qnt
+            # check taxtime Qnt ShortGain or LongGain
             dtoday = datetime.today()
-            dft_index = self.dft.loc[self.dft['Name'] == name]
+            activity_index = self.activity[(self.activity['Type'] == 'buy') & (self.activity['Name'] == name)]
             LongGain, ShortGain = 0, 0
-            for _, rowt in dft_index.iterrows():
-                d1 = datetime.strptime(rowt['TB'], DATE_FORMAT)
+            for _, rowt in activity_index.iterrows():
+                d1 = datetime.strptime(rowt['Time'], DATE_FORMAT)
                 delta = dtoday - d1
                 if delta.days > 365:
                     LongGain += rowt['Qnt'] 
                 else:
                     ShortGain += rowt['Qnt']
-            self.dfp.at[index, 'LongGain'] = LongGain
-            self.dfp.at[index, 'ShortGain'] = ShortGain
+            self.holdings.at[index, 'LongGain'] = LongGain
+            self.holdings.at[index, 'ShortGain'] = ShortGain
 
         # check balance
-        total_stock = self.dfp['Value'].sum()
-        self.dfb.at[0, 'Stock'] = total_stock
-        self.dfb.at[0, 'Time'] = str(datetime.now().strftime(DATE_FORMAT))
+        total_stock = self.holdings['Value'].sum()
+        self.balance.at[0, 'Stock'] = total_stock
+        self.balance.at[0, 'Time'] = str(datetime.now().strftime(DATE_FORMAT))
 
-        #update files
-        self.dfp.to_csv(PATH_P, index=False)
-        self.dft.to_csv(PATH_T, index=False)
-        self.dfb.to_csv(PATH_B, index=False)
-        self.dfb.to_csv(PATH_S, index=False) 
-        print("Updated files at {}".format(DIR))
- 
 
-    #TODO: search new stock to add
-    def add_stock(self):
-        pass
-    #TODO: suggest drop a stock
-    def remove_stock(self):
-        pass
+
 
 if __name__ == "__main__":
-    args = get_arg()
-    if args.mode == 'init':
-        new_profile()
-    elif args.mode == 'run' or args.mode == 'debug':    
-        bot = TradingBot(args)# Create an instance of the trading bot
-        today_date = datetime.today()
-        interval_date = today_date - datetime.strptime(bot.dfb['Time'].values[-1], DATE_FORMAT) 
-        save_back() #create backup
-        bot.get_news() #run news checks
-        # print(bot.news)
-        if (interval_date.days >= INTERVAL_ANALYSIS or args.mode == 'debug'):
-            bot.get_rank() # rank for suggestion
-            print(bot.stock_rank)
-            approve = input("Do you want to execute? (y/n)")
-            if approve == 'y':
-                bot.execute()
-            else:
-                pass
+    args, config = get_arg()
 
+    bot = TradingBot(config)# Create an instance of the trading bot
+    today_date = datetime.today()
+    prev_analysis_date = datetime.strptime(bot.balance['Time'].values[-1], DATE_FORMAT) #get last analysis date
+    interval_date = today_date - prev_analysis_date
+
+    # bot.get_news() #run news checks
+    # print(bot.news)
+    if interval_date.days >= config['INTERVAL_ANALYSIS'] or args.mode == 'debug':
+        bot.get_rank() # rank for suggestion
+        print(bot.stock_rank)
+        approve = input("Do you want to execute? (y/n)")
+        if approve == 'y':
+            bot.execute(bot.stock_rank)
+        else:
+            pass
+    bot.save_back() #create backup

@@ -1,27 +1,90 @@
 ## Bot to invest
 
-start by setting your plan in `main.py`: 
+Bot to help you choose what to invest using AI 
 
+### Install
+
+Install using pip
 ```
-TIMEFRAME = 1*365 # days: 1yrs 
-INIT_CASH = 10000 # investment 10k over a year
-INTERVAL_ANALYSIS = 15 # days to analyze and invest 
-STOCKS2CHECK = ['AAPL','ABBV','AMZN','ASML','BHP','COST','GOOGL','JNJ','KLAC','LLY','LRCX','MSFT','NVDA','TSLA'] # list of stocks to check
+pip install -e .
 ```
 
-Then run `python3 main.py -m init`
-This will create files that will track news, stocks you invested, balance, time bought and sold in `.csv`
+### Run 
 
-Then run `python3 main.py -m run`
-This will get news and suggest what stocks to buy during that time and update the profile `.csv` files
+start by setting your plan using .yaml file like in  `default.yaml`: 
 
-### set to run everyday
+
+Then run `python3 main.py -c default.yaml -m run`
+This will get news and suggest what stocks to buy during that time and update the profile `.xlsx` files
+
+### Set to run everyday
 
 run: `crontab -e`
 
 And add this line to run everyday 8am: 
-`0 8 * * * python main.py -m run`
+`0 8 * * * python main.py -c default.yaml -m run`
 
 
+### Run App
+
+Use the following command to run this bot as an app
+
+```
+streamlit run app.py
+```
+
+### Test strategies
+
+Use this to test different strategies using past historical data
+```
+python backtest.py
+```
+
+
+### To do
+
+
+user input:
+- [x] balance (INIT_CASH)
+- [x] time horizon (TIMEFRAME)
+
+chrono job:
+- [x] set to run analysis every month
+- [x] set to update news every day
+
+collect dynamic data:
+- [x] check news every day
+- [x] calculate sentiment for decision during specific dates
+- [ ] correlate past history news with move backtesting
+
+collect static data: check when need decision
+- [ ] historical data 
+- [ ] balance sheet
+
+decision: given table of stocks or areas to invest 
+- [x] news sentiment
+- [ ] historic data info
+- [ ] balance sheet
+- [ ] personel (linkedin)
+- [x] add backtesting
+
+decision algorithm: rank best to buy and sell
+- [ ] simple average of news sentiment
+- [ ] ask gpt
+- [ ] fundamental analysis
+- [ ] technical analysis
+- [ ] strategies
+
+more stuff:
+- [x] buy/hold
+- [x] sell
+- [x] add/swap to new stocks
+- [ ] add bonds interest rate
+
+output:
+- [x] average-cost stat output profile files .xlsx
+- [ ] email alert when to put money every month
+- [ ] graph of prediction
+- [ ] optional: alpaca api to auto-execute trade
 
 

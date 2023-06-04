@@ -11,7 +11,8 @@ class PortfolioBacktester:
         self.initial_capital = initial_capital
         self.data = data
         self.portfolio = pd.DataFrame(0, index=data.index, columns=['Cash', 'Total'] + stocks)
-        
+        self.stocks = stocks
+
     def run_backtest(self, strategy):
         # Initialize portfolio with initial capital
         self.portfolio['Cash'] = self.initial_capital
@@ -21,20 +22,20 @@ class PortfolioBacktester:
             # Retrieve current date and price
             date = self.data.index[i]
             # Call strategy to determine portfolio allocation
-            allocation = strategy.generate_allocation(date, self.portfolio) # {stock: alloc}
-            
+            allocation = strategy.generate_allocation(date) # dict{stock: alloc}
             holding = 0
             cash = self.portfolio['Cash'][i]
-            for stock, stock_alloc in allocation.items():
-                if len(self.data['Close'].columns) > 1: #track multiple stocks
+            for stock in self.stocks:
+                if len(data['Close'].columns) > 1: #track multiple stocks
                     price = self.data['Close'][stock][i]
                 else:
                     price = self.data['Close'][i]
+
                 # Update portfolio holdings and cash based on allocation
-                if cash > price*stock_alloc:
-                    cash -= price*stock_alloc
-                    self.portfolio[stock][i+1] = self.portfolio[stock][i] + stock_alloc 
-                else:
+                if stock in allocation.keys() and cash > price*allocation[stock]: #buy/sell
+                    cash -= price*allocation[stock]
+                    self.portfolio[stock][i+1] = self.portfolio[stock][i] + allocation[stock] 
+                else: #hold
                     self.portfolio[stock][i+1] = self.portfolio[stock][i]
                 
                 holding += price*self.portfolio[stock][i+1]
@@ -51,17 +52,19 @@ class PortfolioBacktester:
 # Define a simple strategy that allocates 50% of the portfolio on the first day
 
 class SimpleStrategy:
-    def __init__(self, start_date):
+    def __init__(self, start_date, stocks):
         self.prev_date = start_date
-    def generate_allocation(self, date, portfolio):
+        self.stocks = {i: 0 for i in stocks}
+        
+    def generate_allocation(self, date):
         delta = date.date() - self.prev_date
         if date.date() == self.prev_date:            
-            return {"AAPL":0, "SPY":10}
+            return {'HES':3, 'TRGP':6, 'FANG':3, 'OKE':8, 'DHI':3, 'HCA':1, 'TSCO':1 , 'EL':1 }
         elif delta.days > 90:
             self.prev_date = date.date()
-            return {"AAPL":0, "SPY":5}
+            return self.stocks
         else:
-            return {"AAPL":0, "SPY":0}
+            return self.stocks
 
 
 def plot_cmp(stocks):
@@ -77,20 +80,25 @@ def plot_cmp(stocks):
 
 if __name__ == "__main__":
     # Example usage
-    start_date = "2020-01-01"  # Example start date in yyyy-mm-dd format
-    end_date = "2023-04-20"  # Example end date in yyyy-mm-dd format
-    stocks = ['AAPL', 'SPY']
+    start_date = "2019-12-31"  # Example start date in yyyy-mm-dd format
+    end_date = "2023-05-20"  # Example end date in yyyy-mm-dd format
+    stocks = ['HES', 'TRGP', 'FANG', 'OKE', 'DHI', 'HCA', 'TSCO' , 'EL', 'SPY', 'VUG', 'VOO']
     data = yf.download(stocks, start=start_date, end=end_date)
-
+    INIT_CAPITAL = 3000
 
     # Create a portfolio backtester instance
-    backtester = PortfolioBacktester(initial_capital=50000, data=data, stocks=stocks)
+    backtester = PortfolioBacktester(initial_capital=INIT_CAPITAL, data=data, stocks=stocks)
+    strategy = SimpleStrategy(data.index[0].date(), stocks)
 
     # Run the backtest using the simple strategy
-    backtester.run_backtest(SimpleStrategy(data.index[0].date()))
+    backtester.run_backtest(strategy)
 
     # Retrieve the portfolio value
     portfolio_value = backtester.get_portfolio_value()
     print(portfolio_value)
 
-    plot_cmp({"SPY":data['Close']['SPY']/data['Close']['SPY'][0], "MyPort":backtester.portfolio['Total']/50000})
+
+    plot_cmp({"SPY":data['Close']['SPY']/data['Close']['SPY'][0], #normalize gains
+            "VUG":data['Close']['VUG']/data['Close']['VUG'][0], 
+            "VOO":data['Close']['VOO']/data['Close']['VOO'][0], 
+            "MyPort":backtester.portfolio['Total']/INIT_CAPITAL})

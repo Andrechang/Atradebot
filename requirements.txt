@@ -1,0 +1,14 @@
+beautifulsoup4==4.12.2
+matplotlib==3.7.1
+nltk==3.8.1
+pandas==1.5.3
+python_dateutil==2.8.2
+PyYAML==6.0
+Requests==2.31.0
+streamlit==1.22.0
+streamlit_extras==0.2.7
+tqdm==4.65.0
+trafilatura==1.6.0
+transformers==4.30.0.dev0
+tweepy==4.14.0
+yfinance==0.2.18
