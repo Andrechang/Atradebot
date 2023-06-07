@@ -1,0 +1,6 @@
+TIMEFRAME: 365 # days 1yrs 
+INIT_CASH: 10000 # investment 50k over a year
+INTERVAL_ANALYSIS: 15 # days to analyze and invest 
+INVEST_AMOUNT: INIT_CASH/(TIMEFRAME/INTERVAL_ANALYSIS) # amount to invest every INTERVAL_ANALYSIS days
+STOCKS2CHECK: ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA'] # list of stocks to check
+SAVE_FILE: 'myportfolio.xlsx' #profile data
