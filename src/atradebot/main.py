@@ -29,6 +29,9 @@ def get_price(stock):
 
 # user finance plan input
 # TODO: add saved income to balance
+# TODO: control time of the news to collect (googlefinance extra)
+
+
 
 # holdings: Name, Qnt, UCost (unit cost), BaseCost, Price (current price), Value (current Value), LongGain (Qnt), ShortGain (Qnt)
 # activity: Name, type (buy/sell), TB (time bought), Qnt, Proceed

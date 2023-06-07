@@ -10,6 +10,7 @@ pip install -e .
 ```
 
 ### Run 
+Go to folder `src/atradebot`
 
 start by setting your plan using .yaml file like in  `default.yaml`: 
 
@@ -17,7 +18,17 @@ start by setting your plan using .yaml file like in  `default.yaml`:
 Then run `python3 main.py -c default.yaml -m run`
 This will get news and suggest what stocks to buy during that time and update the profile `.xlsx` files
 
+### Test strategies
+Go to folder `src/atradebot`
+
+Use this to test different strategies using past historical data
+```
+python backtest.py
+```
+
+
 ### Set to run everyday
+Go to folder `src/atradebot`
 
 run: `crontab -e`
 
@@ -33,12 +44,6 @@ Use the following command to run this bot as an app
 streamlit run app.py
 ```
 
-### Test strategies
-
-Use this to test different strategies using past historical data
-```
-python backtest.py
-```
 
 
 ### To do
@@ -69,11 +74,14 @@ decision: given table of stocks or areas to invest
 - [x] add backtesting
 
 decision algorithm: rank best to buy and sell
-- [ ] simple average of news sentiment
+- [x] simple average of news sentiment
 - [ ] ask gpt
-- [ ] fundamental analysis
-- [ ] technical analysis
-- [ ] strategies
+- [x] avg cost strategy
+
+app
+- [x] page1 QA
+- [x] page2 stock strategy
+- [ ] page3 chat
 
 more stuff:
 - [x] buy/hold
@@ -84,6 +92,7 @@ more stuff:
 output:
 - [x] average-cost stat output profile files .xlsx
 - [ ] email alert when to put money every month
+- [x] backtest comparison graph
 - [ ] graph of prediction
 - [ ] optional: alpaca api to auto-execute trade
 

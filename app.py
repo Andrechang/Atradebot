@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 
-st.set_page_config(page_title="QA", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="Atradebot", page_icon="🤖", layout="wide")
 
 if 'qa_answers' not in st.session_state:
     st.session_state.qa_answers = {}
@@ -39,9 +39,10 @@ def calc_risk(answers, amount, timeh):
 
     return risk_level
 
-"""
+st.write("""
 # Answer the questions below to help AI generate a personalized set of stocks:
-"""
+""")
+
 options = [["Under 25", "25-34", "35-44", "45 or older"],
 ["To generate income in the short-term","To build wealth in the long-term", "To preserve my capital"],
 ["I would sell immediately", "I would hold onto my investments", "I would buy more"],
@@ -71,7 +72,7 @@ if not timeh.isnumeric():
 submitted = st.button("Submit")
 if submitted and amount.isnumeric() and timeh.isnumeric():
     risk = calc_risk(indexes, int(amount), int(timeh))
-    st.session_state.qa_answers = {"risk":risk, "amount":amount, "time":timeh}
+    st.session_state.qa_answers = {"risk":risk, "amount":int(amount), "time":int(timeh)}
     switch_page("page2")
 
 
