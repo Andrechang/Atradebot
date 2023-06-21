@@ -2,7 +2,7 @@ import pandas as pd
 import tweepy
 from argparse import ArgumentParser
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import yfinance as yf
 import shutil 
 import math
@@ -29,7 +29,6 @@ def get_price(stock):
 
 # user finance plan input
 # TODO: add saved income to balance
-# TODO: control time of the news to collect (googlefinance extra)
 
 
 
@@ -53,7 +52,7 @@ def get_arg(raw_args=None):
     config.update(vars(args))
     return args, config
 
-
+# run financial sentiment analysis model
 def get_sentiment(text, model, max_length=512):
     sentences = tokenize.sent_tokenize(text)
     # truncate sentences that are too long
@@ -71,6 +70,54 @@ def get_sentiment(text, model, max_length=512):
         den = len(sentiment)-neutrals
         sentiment = sum/den if den > 0 else 1.0 # as all neutral
     return sentiment
+
+#add/subtract business days
+def business_days(start_date, num_days):
+    current_date = start_date
+    business_days_added = 0
+    while business_days_added < abs(num_days):
+        if num_days < 0:
+            current_date -= timedelta(days=1)
+        else:
+            current_date += timedelta(days=1)
+        if current_date.weekday() < 5:  # Monday to Friday
+            business_days_added += 1
+    return current_date
+
+# collect google search text 
+def get_google_news(stock, num_results=10, time_period=[]):
+    # time_period=['2019-06-28' (start_time), '2019-06-29' (end_time)]
+    query = stock
+    headers = {
+            "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36"
+        }
+    if time_period:
+        query += f"+before%3A{time_period[1]}+after%3A{time_period[0]}" # add time range     
+    search_req = "https://www.google.com/search?q="+query+"&gl=us&tbm=nws&num="+str(num_results)+""
+    #https://developers.google.com/custom-search/docs/xml_results#WebSearch_Request_Format
+    news_results = []
+    # get webpage content
+    response = requests.get(search_req, headers=headers)
+    soup = BeautifulSoup(response.content, "html.parser")
+    for el in soup.select("div.SoaBEf"):
+        sublink = el.find("a")["href"]
+        downloaded = trafilatura.fetch_url(sublink)
+        html_text = trafilatura.extract(downloaded)
+        if html_text:
+            news_results.append(
+                {
+                    "link": el.find("a")["href"],
+                    "title": el.select_one("div.MBeuO").get_text(),
+                    "snippet": el.select_one(".GI74Re").get_text(),
+                    "date": el.select_one(".LfVVr").get_text(),
+                    "source": el.select_one(".NUnG9d span").get_text(),
+                    "text": html_text,
+                    "stock": stock,
+                    "price": get_price(stock)
+                }
+            )
+    return news_results, search_req, soup
 
 class TradingBot:
     def __init__(self, cfg):
@@ -151,39 +198,7 @@ class TradingBot:
         tokenizer = BertTokenizer.from_pretrained('yiyanghkust/finbert-tone')
         self.sentiment_analyzer = pipeline("sentiment-analysis", model=finbert, tokenizer=tokenizer)
 
-    # collect google search text and sentiment score
-    def get_google_news(self, stock, num_results=10, time_period=[]):
-        # time_period=['2019-06-28' (start_time), '2019-06-29' (end_time)]
-        query = stock
-        headers = {
-                "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36"
-            }
-        if time_period:
-            query += f"+before%3A{time_period[1]}+after%3A{time_period[0]}" # add time range     
-        search_req = "https://www.google.com/search?q="+query+"&gl=us&tbm=nws&num="+str(num_results)+""
-        #https://developers.google.com/custom-search/docs/xml_results#WebSearch_Request_Format
-        news_results = []
-        # get webpage content
-        response = requests.get(search_req, headers=headers)
-        soup = BeautifulSoup(response.content, "html.parser")
-        for el in soup.select("div.SoaBEf"):
-            sublink = el.find("a")["href"]
-            downloaded = trafilatura.fetch_url(sublink)
-            html_text = trafilatura.extract(downloaded)
-            if html_text:
-                news_results.append(
-                    {
-                        "link": el.find("a")["href"],
-                        "title": el.select_one("div.MBeuO").get_text(),
-                        "snippet": el.select_one(".GI74Re").get_text(),
-                        "date": el.select_one(".LfVVr").get_text(),
-                        "source": el.select_one(".NUnG9d span").get_text(),
-                        "text": html_text,
-                        "stock": stock
-                    }
-                )
-        return news_results, search_req, soup
+    
 
     # get the news from: google, TODO yfinance, twitter, 
     def get_news(self):
@@ -194,7 +209,7 @@ class TradingBot:
             #reddit
             #blind
             # get google text news
-            gnews, _, _ = self.get_google_news(stock)
+            gnews, _, _ = get_google_news(stock)
             
             df = pd.DataFrame(gnews)
             self.news = pd.concat([self.news, df],ignore_index=True)

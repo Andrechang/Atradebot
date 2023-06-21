@@ -1,6 +1,7 @@
 # technical analysis functions
 import numpy as np
 import matplotlib.pyplot as plt
+import yfinance as yf
 
 def StochRSI(series, period=14, smoothK=3, smoothD=3):
     # Calculate RSI 
@@ -65,4 +66,5 @@ def test_stochRSI(data):
         plt.scatter(level, data['Close'][level], color='blue', )
 
 if __name__ == "__main__":
-    pass
+    data = yf.download('AAPL', start="2020-03-15", end="2022-07-15")
+    test_stochRSI(data)
