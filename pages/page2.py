@@ -1,6 +1,6 @@
 import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
-from atradebot import backtest
+from src.atradebot import backtest
 import matplotlib.pyplot as plt
 import yfinance as yf
 
