@@ -84,6 +84,26 @@ def business_days(start_date, num_days):
             business_days_added += 1
     return current_date
 
+def get_forecast(stock, date):
+    # forecast 0: 1mon, 1: 5mon, 2: 1 yr. 
+    # higher than 1. percent increase, lower than 1. percent decrease
+    # date = 'Feb 2, 2019'
+    s = datetime.strptime(date, "%b %d, %Y")
+    e = business_days(s, +3)
+    data = yf.Ticker(stock)
+    hdata = data.history(start=s.strftime("%Y-%m-%d"),  end=e.strftime("%Y-%m-%d"))
+    price = hdata['Close'].mean()
+
+    forecast = [0, 0, 0]
+    add_days = [30, 5*30, 12*30]
+    for idx, adays in enumerate(add_days):
+        s = business_days(s, adays)#look into future
+        e = business_days(s, +3)
+        hdata = data.history(start=s.strftime("%Y-%m-%d"),  end=e.strftime("%Y-%m-%d"))
+        forecast[idx] = hdata['Close'].mean()/price
+    
+    return forecast
+
 # collect google search text 
 def get_google_news(stock, num_results=10, time_period=[]):
     # time_period=['2019-06-28' (start_time), '2019-06-29' (end_time)]
@@ -114,7 +134,6 @@ def get_google_news(stock, num_results=10, time_period=[]):
                     "source": el.select_one(".NUnG9d span").get_text(),
                     "text": html_text,
                     "stock": stock,
-                    "price": get_price(stock)
                 }
             )
     return news_results, search_req, soup

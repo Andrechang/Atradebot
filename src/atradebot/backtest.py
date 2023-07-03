@@ -77,14 +77,16 @@ class SimpleStrategy:
     def __init__(self, start_date, end_date, data, stocks, cash=10000):
         start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-        self.prev_date = start_date
+        self.prev_date = start_date  #previous date for rebalance
         self.stocks = {i: 0 for i in stocks}
-        self.cash = [cash*0.5, cash*0.3, cash*0.1, cash*0.1] #amount to invest in each rebalance
+        
         self.start_date = start_date
         self.end_date = end_date
         delta = end_date - start_date
         self.days_interval = delta.days/len(self.cash) #rebalance 4 times
         self.data = data['Adj Close']
+
+        self.cash = [cash*0.5, cash*0.3, cash*0.1, cash*0.1] #amount to invest in each rebalance
         self.cash_idx = 0
 
     def generate_allocation(self, date):
