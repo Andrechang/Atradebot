@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from pypfopt import risk_models, expected_returns
 from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
 from pypfopt.efficient_frontier import EfficientFrontier
+from fin_train import FinForecastStrategy
+
 
 pd.options.mode.chained_assignment = None
 DATE_FORMAT = "%Y-%m-%d"
@@ -80,16 +82,23 @@ class SimpleStrategy:
         self.prev_date = start_date  #previous date for rebalance
         self.stocks = {i: 0 for i in stocks}
         
+        self.cash = [cash*0.5, cash*0.3, cash*0.1, cash*0.1] #amount to invest in each rebalance
+        self.cash_idx = 0
+
         self.start_date = start_date
         self.end_date = end_date
         delta = end_date - start_date
         self.days_interval = delta.days/len(self.cash) #rebalance 4 times
         self.data = data['Adj Close']
 
-        self.cash = [cash*0.5, cash*0.3, cash*0.1, cash*0.1] #amount to invest in each rebalance
-        self.cash_idx = 0
-
     def generate_allocation(self, date):
+        """Generate allocation based on the date
+        Args:
+            date (pandas.Timestamp): date to generate allocation
+
+        Returns:
+            dict{"stock": number of stocks to buy/sell }: allocation for each stock
+        """
         delta = date.date() - self.prev_date
         idx = self.data.index.get_loc(str(date.date()))
         if date.date() == self.prev_date: #first day
@@ -130,7 +139,11 @@ if __name__ == "__main__":
 
     # Create a portfolio backtester instance
     backtester = PortfolioBacktester(initial_capital=INIT_CAPITAL, data=data, stocks=stocks, start_date=start_date)
-    strategy = SimpleStrategy(start_date, end_date, data, stocks, INIT_CAPITAL)
+
+
+    stocks_s = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA']
+    # strategy = SimpleStrategy(start_date, end_date, data, stocks, INIT_CAPITAL)
+    strategy = FinForecastStrategy(start_date, end_date, data, stocks_s, INIT_CAPITAL)
 
     # Run the backtest using the simple strategy
     backtester.run_backtest(strategy)
@@ -148,5 +161,5 @@ if __name__ == "__main__":
     for date, alloct in backtester.activity:
         idx = data.index.get_loc(date)
         plt.scatter(date, backtester.portfolio['Total'][idx]/INIT_CAPITAL, color='blue')
-        print(datetime.strptime(date, DATE_FORMAT), alloct)
+        print(date, alloct)
     plt.show()

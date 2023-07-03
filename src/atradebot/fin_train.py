@@ -19,6 +19,11 @@ from tqdm import tqdm
 import numpy as np
 from argparse import ArgumentParser
 from torch.utils.data.dataloader import DataLoader
+from sklearn.metrics import mean_squared_error 
+import re
+from datetime import date, datetime
+from dateutil.relativedelta import relativedelta
+from atradebot import main
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -36,17 +41,20 @@ INSTRUCTION_KEY = "### Instruction:"
 RESPONSE_KEY = "### Response:"
 END_KEY = "### End"
 
-def generate_prompt(data_point):
+def generate_prompt(data_point, mode='train'):
     # from https://github.com/tloen/alpaca-lora
+    prompt = ""
     if data_point["instruction"]:
-        return f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+        prompt = f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
             ### Instruction: {data_point["instruction"]}
-            ### Input: {data_point["input"]}
-            ### Response: {data_point["output"]} ### End"""
+            ### Input: {data_point["input"]}\n ### Response:"""
     else:
         return f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
-            ### Instruction: {data_point["instruction"]}
-            ### Response: {data_point["output"]} ### End"""
+            ### Instruction: {data_point["instruction"]}\n ### Response:"""
+    if mode == 'train':
+            prompt += f""" {data_point["output"]} ### End"""
+    return prompt 
+
 
 def get_model(peft_model_id = HUB_MODEL):
     config = PeftConfig.from_pretrained(peft_model_id)
@@ -88,9 +96,9 @@ def get_response(sequence, tokenizer):
         decoded = tokenizer.decode(sequence[response_pos + 1 : end_pos]).strip()
         return decoded    
     else:
-        return tokenizer.decode(sequence[response_pos + 1 : ])
+        return ""#tokenizer.decode(sequence[response_pos + 1 : ])
 
-def main(args):
+def train_model(args):
     if args.mode == 'train':            
         model_id = "databricks/dolly-v2-3b"
         config = LoraConfig(
@@ -129,7 +137,7 @@ def main(args):
 
     data = data.shuffle().map(
         lambda data_point: tokenizer(
-            generate_prompt(data_point),
+            generate_prompt(data_point, mode=args.mode),
             truncation=True,
             padding="max_length",
         )
@@ -141,7 +149,7 @@ def main(args):
         # auto_find_batch_size=True,
         per_device_train_batch_size=MICRO_BATCH_SIZE,
         gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-        num_train_epochs=70,
+        num_train_epochs=100,
         learning_rate=2e-5,
         fp16=True,
         save_total_limit=4,
@@ -178,11 +186,13 @@ def main(args):
         model.to(device)
         data.set_format("torch")
         eval_dataloader = DataLoader(data["test"], batch_size=1)
+
+        all_preds, all_targets = [], []
         for in_data in tqdm(eval_dataloader):
             in_data['input_ids'] = in_data['input_ids'].to(device)
             with torch.cuda.amp.autocast():
                 outputs = model.generate(input_ids = in_data['input_ids'], 
-                    max_new_tokens=256,
+                    max_new_tokens=128,
                     top_p = 0.92,
                     top_k = 0,
                     do_sample = True,
@@ -191,9 +201,115 @@ def main(args):
                     pad_token_id=tokenizer.eos_token_id,
                     eos_token_id=tokenizer.eos_token_id)
             for output in outputs:
-                print("sample: ", get_response(output.cpu().numpy(), tokenizer))
+                response = get_response(output.cpu().numpy(), tokenizer)
+                pred = re.findall(r"[-+]?(?:\d*\.*\d+)", response)
+                target = re.findall(r"[-+]?(?:\d*\.*\d+)", in_data['output'][0])
+                print("sample: ", response)
+                print("target: ", target)
+                if len(pred) > 3:
+                    pred = pred[:3]
+                all_preds += pred
+                all_targets += target
+            
+        all_targets = [eval(i) for i in all_targets]
+        all_preds = [eval(i) for i in all_preds]
+        print("MSE: ", mean_squared_error(all_targets, all_preds))
 
-            break
+class FinForecastStrategy:
+    def __init__(self, start_date, end_date, data, stocks, cash=10000, model_id="achang/fin_forecast"):
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        self.prev_date = start_date #previous date for rebalance
+        self.stocks = {i: 0 for i in stocks}
+        
+        self.cash = [cash*0.5, cash*0.3, cash*0.1, cash*0.1] #amount to invest in each rebalance
+        self.cash_idx = 0
+
+        self.start_date = start_date
+        self.end_date = end_date
+        delta = end_date - start_date
+        self.days_interval = delta.days/len(self.cash) #rebalance 4 times
+        self.data = data['Adj Close']
+
+        """
+        model:
+        data: achang/stock_forecast
+        input: 
+            Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+                ## Instruction: what is the forecast for ... 
+                ## Input: date, news title, news snippet
+        output:
+                ## Response: forecast percentage change for 1mon, 5mon, 1 yr
+        """
+
+        self.model, self.tokenizer = get_model(model_id)
+        self.model.to(device)
+
+    def model_run(self, date, amount_invest, prices):
+        #get news before date and forecast
+        end = date.date()
+        start = main.business_days(end, -5)
+        all_stocks = {}
+        for stock in self.stocks:
+            news, _, _ = main.get_google_news(stock=stock, num_results=5, time_period=[start, end])
+            all_pred = []
+            for new in news:
+                in_dict = {'instruction': f"what is the forecast for {new['stock']}", 
+                        'input':f"{new['date']} {new['title']} {new['snippet']}"}
+                prompt = generate_prompt(in_dict, mode='eval')
+                in_data = self.tokenizer(prompt, return_tensors="pt", truncation=True, padding="max_length")
+                in_data['input_ids'] = in_data['input_ids'].to(device)
+                with torch.cuda.amp.autocast():
+                    outputs = self.model.generate(input_ids = in_data['input_ids'], 
+                        max_new_tokens=128,)
+                        # top_p = 0.92,
+                        # top_k = 0,
+                        # do_sample = True,
+                        # early_stopping=True,
+                        # num_return_sequences=1,
+                        # pad_token_id=self.tokenizer.eos_token_id,
+                        # eos_token_id=self.tokenizer.eos_token_id)
+
+                response = get_response(outputs[0].cpu().numpy(), self.tokenizer)
+                pred = re.findall(r"[-+]?(?:\d*\.*\d+)", response)
+                if len(pred) > 3:
+                    pred = pred[:3]
+                if len(pred) < 3:
+                    continue
+                print(f"{new['stock']} forecast: {response} \n {pred}")
+                pred = [eval(i) for i in pred] #convert to str to float
+                all_pred.append(pred)
+
+            #average forecast
+            avg_pred = np.mean(np.array(all_pred), axis=0)
+            all_stocks[stock] = avg_pred
+        #pick top increasing forecast
+        future_mode = 1 #choose timeline 1mon, 5mon, 1yr
+        alloc = sorted(all_stocks.items(), key=lambda x: x[1][future_mode], reverse=True) #most increase first 
+        weights = [0.6, 0.3, 0.1] #weight for each stock
+        amounts = [int(amount_invest * weight) for weight in weights]
+        allocation = {i[0]: int(amounts[idx]/prices[i[0]]) for idx, i in enumerate(alloc[:3])}#get top3 stocks
+        leftover = amount_invest - sum([prices[i[0]]*allocation[i[0]] for i in alloc[:3]])
+        return allocation, leftover
+        #TODO balance with max_sharpe_allocation
+
+    def generate_allocation(self, date):
+        delta = date.date() - self.prev_date
+        idx = self.data.index.get_loc(str(date.date()))
+        if date.date() == self.prev_date: #first day
+            # allocation, leftover = max_sharpe_allocation(self.data[0:idx], amount_invest=self.cash[self.cash_idx])
+            allocation, leftover = self.model_run(date, amount_invest=self.cash[self.cash_idx], prices=self.data.iloc[idx])
+            self.cash_idx += 1                        
+            return allocation
+        elif delta.days > self.days_interval: #rebalance 
+            # allocation, leftover = max_sharpe_allocation(self.data[0:idx], amount_invest=self.cash[self.cash_idx])
+            allocation, leftover = self.model_run(date, amount_invest=self.cash[self.cash_idx], prices=self.data.iloc[idx])
+            self.prev_date = date.date()
+            self.cash_idx += 1
+            return allocation
+        else:
+            return self.stocks
+
 
 def get_parser(raw_args=None):
     parser = ArgumentParser(description="model")
@@ -206,6 +322,6 @@ def get_parser(raw_args=None):
 
 if __name__ == "__main__":
     args = get_parser()
-    main(args)
+    train_model(args)
 
 
