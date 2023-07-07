@@ -25,13 +25,6 @@ def get_price(stock):
     ticker = yf.Ticker(stock).info
     return ticker['regularMarketOpen']
 
-
-
-# user finance plan input
-# TODO: add saved income to balance
-
-
-
 # holdings: Name, Qnt, UCost (unit cost), BaseCost, Price (current price), Value (current Value), LongGain (Qnt), ShortGain (Qnt)
 # activity: Name, type (buy/sell), TB (time bought), Qnt, Proceed
 # balance: Time, Cash, Stock, Total
@@ -71,6 +64,9 @@ def get_sentiment(text, model, max_length=512):
         sentiment = sum/den if den > 0 else 1.0 # as all neutral
     return sentiment
 
+def is_business_day(date):
+    return bool(len(pd.bdate_range(date, date)))
+
 #add/subtract business days
 def business_days(start_date, num_days):
     current_date = start_date
@@ -95,7 +91,7 @@ def get_forecast(stock, date):
     price = hdata['Close'].mean()
 
     forecast = [0, 0, 0]
-    add_days = [30, 5*30, 12*30]
+    add_days = [21, 5*21, 12*21] #add business days
     for idx, adays in enumerate(add_days):
         s = business_days(s, adays)#look into future
         e = business_days(s, +3)

@@ -191,13 +191,10 @@ def train_model(args):
         for in_data in tqdm(eval_dataloader):
             in_data['input_ids'] = in_data['input_ids'].to(device)
             with torch.cuda.amp.autocast():
-                outputs = model.generate(input_ids = in_data['input_ids'], 
+                outputs = model.generate(
+                    input_ids = in_data['input_ids'],
+                    attention_mask = in_data['attention_mask'], 
                     max_new_tokens=128,
-                    top_p = 0.92,
-                    top_k = 0,
-                    do_sample = True,
-                    early_stopping=True,
-                    num_return_sequences=1,
                     pad_token_id=tokenizer.eos_token_id,
                     eos_token_id=tokenizer.eos_token_id)
             for output in outputs:
@@ -208,6 +205,8 @@ def train_model(args):
                 print("target: ", target)
                 if len(pred) > 3:
                     pred = pred[:3]
+                if len(pred) < 3:
+                    continue
                 all_preds += pred
                 all_targets += target
             
@@ -245,13 +244,13 @@ class FinForecastStrategy:
         self.model, self.tokenizer = get_model(model_id)
         self.model.to(device)
 
-    def model_run(self, date, amount_invest, prices):
+    def model_run(self, date, num_news=5):
         #get news before date and forecast
         end = date.date()
         start = main.business_days(end, -5)
         all_stocks = {}
         for stock in self.stocks:
-            news, _, _ = main.get_google_news(stock=stock, num_results=5, time_period=[start, end])
+            news, _, _ = main.get_google_news(stock=stock, num_results=num_news, time_period=[start, end])
             all_pred = []
             for new in news:
                 in_dict = {'instruction': f"what is the forecast for {new['stock']}", 
@@ -261,28 +260,30 @@ class FinForecastStrategy:
                 in_data['input_ids'] = in_data['input_ids'].to(device)
                 with torch.cuda.amp.autocast():
                     outputs = self.model.generate(input_ids = in_data['input_ids'], 
-                        max_new_tokens=128,)
-                        # top_p = 0.92,
-                        # top_k = 0,
-                        # do_sample = True,
-                        # early_stopping=True,
-                        # num_return_sequences=1,
-                        # pad_token_id=self.tokenizer.eos_token_id,
-                        # eos_token_id=self.tokenizer.eos_token_id)
+                        attention_mask = in_data['attention_mask'],
+                        max_new_tokens=128,
+                        pad_token_id= self.tokenizer.eos_token_id,
+                        eos_token_id= self.tokenizer.eos_token_id
+                    )
 
                 response = get_response(outputs[0].cpu().numpy(), self.tokenizer)
                 pred = re.findall(r"[-+]?(?:\d*\.*\d+)", response)
+                print(f"{new['stock']} forecast: {response} \n {pred}")
                 if len(pred) > 3:
                     pred = pred[:3]
                 if len(pred) < 3:
                     continue
-                print(f"{new['stock']} forecast: {response} \n {pred}")
+                
                 pred = [eval(i) for i in pred] #convert to str to float
                 all_pred.append(pred)
 
             #average forecast
             avg_pred = np.mean(np.array(all_pred), axis=0)
             all_stocks[stock] = avg_pred
+        return all_stocks
+
+    def model_allocation(self, date, amount_invest, prices):
+        all_stocks = self.model_run(date)
         #pick top increasing forecast
         future_mode = 1 #choose timeline 1mon, 5mon, 1yr
         alloc = sorted(all_stocks.items(), key=lambda x: x[1][future_mode], reverse=True) #most increase first 
@@ -298,12 +299,12 @@ class FinForecastStrategy:
         idx = self.data.index.get_loc(str(date.date()))
         if date.date() == self.prev_date: #first day
             # allocation, leftover = max_sharpe_allocation(self.data[0:idx], amount_invest=self.cash[self.cash_idx])
-            allocation, leftover = self.model_run(date, amount_invest=self.cash[self.cash_idx], prices=self.data.iloc[idx])
+            allocation, leftover = self.model_allocation(date, amount_invest=self.cash[self.cash_idx], prices=self.data.iloc[idx])
             self.cash_idx += 1                        
             return allocation
         elif delta.days > self.days_interval: #rebalance 
             # allocation, leftover = max_sharpe_allocation(self.data[0:idx], amount_invest=self.cash[self.cash_idx])
-            allocation, leftover = self.model_run(date, amount_invest=self.cash[self.cash_idx], prices=self.data.iloc[idx])
+            allocation, leftover = self.model_allocation(date, amount_invest=self.cash[self.cash_idx], prices=self.data.iloc[idx])
             self.prev_date = date.date()
             self.cash_idx += 1
             return allocation

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from pypfopt import risk_models, expected_returns
 from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
 from pypfopt.efficient_frontier import EfficientFrontier
-from fin_train import FinForecastStrategy
+from atradebot.fin_train import FinForecastStrategy
 
 
 pd.options.mode.chained_assignment = None
@@ -130,9 +130,9 @@ def plot_cmp(stocks, show=False):
 if __name__ == "__main__":
     
     # Example usage
-    past_date = "2018-01-31" 
-    start_date = "2019-01-31"  
-    end_date = "2020-05-20" 
+    past_date = "2019-01-31" 
+    start_date = "2022-01-31"  
+    end_date = "2023-05-20" 
     stocks = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA', 'SPY', 'VUG', 'VOO']
     data = yf.download(stocks, start=past_date, end=end_date)
     INIT_CAPITAL = 10000
