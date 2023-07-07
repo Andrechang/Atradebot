@@ -29,8 +29,8 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-HUB_MODEL = "achang/fin_forecast"
-HUB_DATA = 'achang/stock_forecast'
+HUB_MODEL = "achang/fin_forecast_tmp" # Change here to use your own model
+HUB_DATA = 'achang/stock_forecast_tmp'# Change here to use your own data
 OUTFOLDER = 'exp2'
 IGNORE_INDEX = -100
 MICRO_BATCH_SIZE = 4  # change to 4 for 3090
@@ -216,6 +216,17 @@ def train_model(args):
 
 class FinForecastStrategy:
     def __init__(self, start_date, end_date, data, stocks, cash=10000, model_id="achang/fin_forecast"):
+        """
+        model:
+        data: achang/stock_forecast
+        input: 
+            Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+                ## Instruction: what is the forecast for ... 
+                ## Input: date, news title, news snippet
+        output:
+                ## Response: forecast percentage change for 1mon, 5mon, 1 yr
+        """
+
         start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         self.prev_date = start_date #previous date for rebalance
@@ -230,27 +241,26 @@ class FinForecastStrategy:
         self.days_interval = delta.days/len(self.cash) #rebalance 4 times
         self.data = data['Adj Close']
 
-        """
-        model:
-        data: achang/stock_forecast
-        input: 
-            Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
-                ## Instruction: what is the forecast for ... 
-                ## Input: date, news title, news snippet
-        output:
-                ## Response: forecast percentage change for 1mon, 5mon, 1 yr
-        """
-
         self.model, self.tokenizer = get_model(model_id)
         self.model.to(device)
 
     def model_run(self, date, num_news=5):
-        #get news before date and forecast
+        """get news before date and forecast using model
+
+        Args:
+            date (pandas.Timestamp): date = pd.Timestamp("2021-07-22")
+            num_news (int, optional): number of news to get. Defaults to 5.
+
+        Returns:
+            dict{stock: list of pred }: prediction for each stock. Prediction format [1 mon, 5 mon, 1 yr]
+        """
+
         end = date.date()
         start = main.business_days(end, -5)
         all_stocks = {}
         for stock in self.stocks:
             news, _, _ = main.get_google_news(stock=stock, num_results=num_news, time_period=[start, end])
+            assert len(news) > 0, "no news found, google search blocked error"
             all_pred = []
             for new in news:
                 in_dict = {'instruction': f"what is the forecast for {new['stock']}", 
@@ -282,29 +292,61 @@ class FinForecastStrategy:
             all_stocks[stock] = avg_pred
         return all_stocks
 
-    def model_allocation(self, date, amount_invest, prices):
+    def model_allocation(self, date, amount_invest, prices, portfolio, sell_mode=False):
+        """get allocation for each stock based on model predictions
+        Args:
+            date (pandas.Timestamp): date = pd.Timestamp("2021-07-22")
+            amount_invest (int): amount to invest
+            prices (pandas.Series): list of stock prices
+            portfolio (dict{stock: number of shares}): current portfolio
+            sell_mode (bool, optional): whether to sell stocks. Defaults to False.
+        Returns:
+            dict{stock: number to buy/sell}: allocation for each stock
+        """        
         all_stocks = self.model_run(date)
         #pick top increasing forecast
-        future_mode = 1 #choose timeline 1mon, 5mon, 1yr
+        future_mode = 0 #choose timeline 1mon, 5mon, 1yr
         alloc = sorted(all_stocks.items(), key=lambda x: x[1][future_mode], reverse=True) #most increase first 
+        # alloc: tuple(stock, forecast)
         weights = [0.6, 0.3, 0.1] #weight for each stock
         amounts = [int(amount_invest * weight) for weight in weights]
         allocation = {i[0]: int(amounts[idx]/prices[i[0]]) for idx, i in enumerate(alloc[:3])}#get top3 stocks
+
+        #get top stocks to sell
+        if sell_mode:
+            alloc_sell = sorted(all_stocks.items(), key=lambda x: x[1][future_mode], reverse=False) #most decrease first 
+            weights_sell = 0.5 #weight to sell holdings 
+            for sell in alloc_sell:
+                if portfolio[sell[0]][date] > 0:
+                    amounts_sell = int(portfolio[sell[0]][date]*weights_sell)
+                    allocation[sell[0]] = -amounts_sell
+                    break
+
         leftover = amount_invest - sum([prices[i[0]]*allocation[i[0]] for i in alloc[:3]])
         return allocation, leftover
         #TODO balance with max_sharpe_allocation
+        
 
-    def generate_allocation(self, date):
+    def generate_allocation(self, date, portfolio):
+        """generate allocation for each stock using average cost investment method
+        Args:
+            date (pandas.Timestamp): date = pd.Timestamp("2021-07-22")
+
+        Returns:
+            dict{stock: number to buy/sell}: allocation for each stock
+        """        
         delta = date.date() - self.prev_date
         idx = self.data.index.get_loc(str(date.date()))
         if date.date() == self.prev_date: #first day
             # allocation, leftover = max_sharpe_allocation(self.data[0:idx], amount_invest=self.cash[self.cash_idx])
-            allocation, leftover = self.model_allocation(date, amount_invest=self.cash[self.cash_idx], prices=self.data.iloc[idx])
+            allocation, leftover = self.model_allocation(date, amount_invest=self.cash[self.cash_idx], 
+                prices=self.data.iloc[idx], portfolio=portfolio, sell_mode=False)
             self.cash_idx += 1                        
             return allocation
         elif delta.days > self.days_interval: #rebalance 
             # allocation, leftover = max_sharpe_allocation(self.data[0:idx], amount_invest=self.cash[self.cash_idx])
-            allocation, leftover = self.model_allocation(date, amount_invest=self.cash[self.cash_idx], prices=self.data.iloc[idx])
+            allocation, leftover = self.model_allocation(date, amount_invest=self.cash[self.cash_idx], 
+                prices=self.data.iloc[idx], portfolio=portfolio, sell_mode=True)
             self.prev_date = date.date()
             self.cash_idx += 1
             return allocation

@@ -32,7 +32,7 @@ class PortfolioBacktester:
             # Retrieve current date and price
             date = self.data.index[i]
             # Call strategy to determine portfolio allocation
-            allocation = strategy.generate_allocation(date) # dict{stock: alloc} 
+            allocation = strategy.generate_allocation(date, self.portfolio) # dict{stock: alloc} 
             holding = 0
             cash = self.portfolio['Cash'][i]
             action = False
@@ -91,7 +91,7 @@ class SimpleStrategy:
         self.days_interval = delta.days/len(self.cash) #rebalance 4 times
         self.data = data['Adj Close']
 
-    def generate_allocation(self, date):
+    def generate_allocation(self, date, portfolio):
         """Generate allocation based on the date
         Args:
             date (pandas.Timestamp): date to generate allocation

@@ -48,9 +48,15 @@ def gen_news_dataset(stocks, start_date, end_date, to_hub=False, num_news=10):
     # to_hub: bool, if true, upload to huggingface hub
 
     all_news = []
+    done = [] #keep track of stocks already done
+    to_save = [] #keep track of stocks that need to be saved
+    if os.path.exists("saved_stocks.json"):
+        with open("saved_stocks.json", "r") as file:
+            done = json.load(file)
 
     for stock in tqdm(stocks):
-        print(stock)
+        if stock in done:
+            continue
         data = yf.download(stock, start=start_date, end=end_date)
         if data.empty:
             continue
@@ -65,7 +71,7 @@ def gen_news_dataset(stocks, start_date, end_date, to_hub=False, num_news=10):
         events = peak_idx + valley_idx #concat lists
         events += [2] # add second day as first event to collect news
         events.sort()
-        
+        print(f'{stock}, events {len(events)}')
         for event in events:
             start = main.business_days(data.index[event], -1)#one day before
             start = start.strftime(main.DATE_FORMAT)
@@ -79,12 +85,22 @@ def gen_news_dataset(stocks, start_date, end_date, to_hub=False, num_news=10):
                 print(f"Can't collect news for {stock} dates {start} to {end}")
                 continue
             all_news += news
-            time.sleep(1)
+            time.sleep(10)
 
-    dataset = Dataset.from_list(all_news)
+        done.append(stock)
+        to_save.append(stock)
 
-    if to_hub:
-        dataset.push_to_hub(f"achang/{HF_news}")
+        dataset = Dataset.from_list(all_news)
+
+        if to_hub and len(to_save) > 5:
+            dataset.push_to_hub(f"achang/{HF_news}_{to_save[0]}_{to_save[-1]}")
+            to_save = []
+            time.sleep(30)
+
+        with open("saved_stocks.json", "w") as file:
+            json.dump(done, file)
+
+
     return dataset
 
 def generate_json(data, to_hub=False): 
@@ -102,16 +118,26 @@ def generate_json(data, to_hub=False):
     with open(f"{HF_forecast}.json", "w") as outfile:
         json.dump(file_data, outfile)
 
+
+def combine_datasets():
+    #combine all news datasets into one
+    #1) benzinga: https://www.kaggle.com/datasets/miguelaenlle/massive-stock-news-analysis-db-for-nlpbacktests?resource=download&select=raw_analyst_ratings.csv
+    # https://github.com/miguelaenlle/Scraping-Tools-Benzinga/blob/master/scrape_benzinga.py
+    #2) finviz: https://www.kaggle.com/datasets?search=finviz
+
+
+    return None
+
 if __name__ == "__main__":
     
-    sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
-    stocks = sp500.Symbol.to_list()
-    # stocks = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA']
+    # sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
+    # stocks = sp500.Symbol.to_list()
+    stocks = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA']
 
     start_date = "2018-01-31"  
     end_date = "2023-06-20"
     dataset = gen_news_dataset(stocks, start_date, end_date, to_hub=True)
-    # generate_json(dataset, to_hub=True)
+    generate_json(dataset, to_hub=True)
 
 
 

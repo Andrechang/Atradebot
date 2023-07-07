@@ -10,11 +10,16 @@ import yaml
 import requests
 from bs4 import BeautifulSoup
 import trafilatura
+from trafilatura.settings import use_config
+
 from nltk import tokenize
 from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import pipeline
 from dateutil.relativedelta import relativedelta
 from tqdm import tqdm 
+
+trafilatura_config = use_config()
+trafilatura_config.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
 
 DATE_FORMAT = "%Y-%m-%d"
 
@@ -81,9 +86,14 @@ def business_days(start_date, num_days):
     return current_date
 
 def get_forecast(stock, date):
-    # forecast 0: 1mon, 1: 5mon, 2: 1 yr. 
-    # higher than 1. percent increase, lower than 1. percent decrease
-    # date = 'Feb 2, 2019'
+    """get forecast for stock on date
+    Args:
+        stock (string): stock id
+        date (string): date format 'Feb 2, 2019' "%b %d, %Y"
+
+    Returns:
+        forecast: forecast list [1mon, 5mon, 1 yr], higher than 1. percent increase, lower than 1. percent decrease
+    """    
     s = datetime.strptime(date, "%b %d, %Y")
     e = business_days(s, +3)
     data = yf.Ticker(stock)
@@ -119,7 +129,7 @@ def get_google_news(stock, num_results=10, time_period=[]):
     for el in soup.select("div.SoaBEf"):
         sublink = el.find("a")["href"]
         downloaded = trafilatura.fetch_url(sublink)
-        html_text = trafilatura.extract(downloaded)
+        html_text = trafilatura.extract(downloaded, config=trafilatura_config)
         if html_text:
             news_results.append(
                 {
