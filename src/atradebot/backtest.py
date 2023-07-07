@@ -7,8 +7,11 @@ import matplotlib.pyplot as plt
 from pypfopt import risk_models, expected_returns
 from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
 from pypfopt.efficient_frontier import EfficientFrontier
+from atradebot.fin_train import FinForecastStrategy
+
 
 pd.options.mode.chained_assignment = None
+DATE_FORMAT = "%Y-%m-%d"
 
 class PortfolioBacktester:
     def __init__(self, initial_capital, data, stocks, start_date):
@@ -17,6 +20,8 @@ class PortfolioBacktester:
         self.portfolio = pd.DataFrame(0, index=self.data.index, columns=['Cash', 'Total'] + stocks)
         self.stocks = stocks
         self.start_date = start_date
+        self.activity = [] #list of (date, allocation)
+
 
     def run_backtest(self, strategy):
         # Initialize portfolio with initial capital
@@ -27,9 +32,10 @@ class PortfolioBacktester:
             # Retrieve current date and price
             date = self.data.index[i]
             # Call strategy to determine portfolio allocation
-            allocation = strategy.generate_allocation(date) # dict{stock: alloc}
+            allocation = strategy.generate_allocation(date, self.portfolio) # dict{stock: alloc} 
             holding = 0
             cash = self.portfolio['Cash'][i]
+            action = False
             for stock in self.stocks:
                 if len(self.data['Close'].columns) > 1: #track multiple stocks
                     price = self.data['Close'][stock][i]
@@ -37,15 +43,18 @@ class PortfolioBacktester:
                     price = self.data['Close'][i]
 
                 # Update portfolio holdings and cash based on allocation
-                if stock in allocation.keys() and cash > price*allocation[stock]: #buy/sell
+                if stock in allocation.keys() and cash > price*allocation[stock] and allocation[stock] != 0: #buy/sell
                     cash -= price*allocation[stock]
                     self.portfolio[stock][i+1] = self.portfolio[stock][i] + allocation[stock] 
+                    action = True
                 else: #hold
                     self.portfolio[stock][i+1] = self.portfolio[stock][i]
                 
                 holding += price*self.portfolio[stock][i+1]
                 
             # Calculate total portfolio value
+            if action:
+                self.activity.append((date, allocation))
             self.portfolio['Cash'][i+1] = cash
             self.portfolio['Total'][i+1] = holding + cash
 
@@ -70,17 +79,26 @@ class SimpleStrategy:
     def __init__(self, start_date, end_date, data, stocks, cash=10000):
         start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-        self.prev_date = start_date
+        self.prev_date = start_date  #previous date for rebalance
         self.stocks = {i: 0 for i in stocks}
+        
         self.cash = [cash*0.5, cash*0.3, cash*0.1, cash*0.1] #amount to invest in each rebalance
+        self.cash_idx = 0
+
         self.start_date = start_date
         self.end_date = end_date
         delta = end_date - start_date
         self.days_interval = delta.days/len(self.cash) #rebalance 4 times
         self.data = data['Adj Close']
-        self.cash_idx = 0
 
-    def generate_allocation(self, date):
+    def generate_allocation(self, date, portfolio):
+        """Generate allocation based on the date
+        Args:
+            date (pandas.Timestamp): date to generate allocation
+
+        Returns:
+            dict{"stock": number of stocks to buy/sell }: allocation for each stock
+        """
         delta = date.date() - self.prev_date
         idx = self.data.index.get_loc(str(date.date()))
         if date.date() == self.prev_date: #first day
@@ -112,16 +130,20 @@ def plot_cmp(stocks, show=False):
 if __name__ == "__main__":
     
     # Example usage
-    past_date = "2018-01-31" 
-    start_date = "2019-01-31"  
-    end_date = "2020-05-20" 
+    past_date = "2019-01-31" 
+    start_date = "2022-01-31"  
+    end_date = "2023-05-20" 
     stocks = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA', 'SPY', 'VUG', 'VOO']
     data = yf.download(stocks, start=past_date, end=end_date)
     INIT_CAPITAL = 10000
 
     # Create a portfolio backtester instance
     backtester = PortfolioBacktester(initial_capital=INIT_CAPITAL, data=data, stocks=stocks, start_date=start_date)
-    strategy = SimpleStrategy(start_date, end_date, data, stocks, INIT_CAPITAL)
+
+
+    stocks_s = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA']
+    # strategy = SimpleStrategy(start_date, end_date, data, stocks, INIT_CAPITAL)
+    strategy = FinForecastStrategy(start_date, end_date, data, stocks_s, INIT_CAPITAL)
 
     # Run the backtest using the simple strategy
     backtester.run_backtest(strategy)
@@ -133,5 +155,11 @@ if __name__ == "__main__":
     idx = data.index.get_loc(start_date)
     data_spy = data['Close']['SPY'][idx:]
     data_my = backtester.portfolio['Total'][idx:]
-    plot_cmp({"SPY":data_spy/data_spy[0], #normalize gains
-            "MyPort":data_my/INIT_CAPITAL}, show=True)
+    plt = plot_cmp({"SPY":data_spy/data_spy[0], #normalize gains
+            "MyPort":data_my/INIT_CAPITAL}, show=False)
+
+    for date, alloct in backtester.activity:
+        idx = data.index.get_loc(date)
+        plt.scatter(date, backtester.portfolio['Total'][idx]/INIT_CAPITAL, color='blue')
+        print(date, alloct)
+    plt.show()

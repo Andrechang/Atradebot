@@ -26,7 +26,6 @@ Use this to test different strategies using past historical data
 python backtest.py
 ```
 
-
 ### Set to run everyday
 Go to folder `src/atradebot`
 
@@ -44,56 +43,15 @@ Use the following command to run this bot as an app
 streamlit run app.py
 ```
 
+### Train model to predict news 
+Go to folder `src/atradebot`
 
-
-### To do
-
-
-user input:
-- [x] balance (INIT_CASH)
-- [x] time horizon (TIMEFRAME)
-
-chrono job:
-- [x] set to run analysis every month
-- [x] set to update news every day
-
-collect dynamic data:
-- [x] check news every day
-- [x] calculate sentiment for decision during specific dates
-- [ ] correlate past history news with move backtesting
-
-collect static data: check when need decision
-- [ ] historical data 
-- [ ] balance sheet
-
-decision: given table of stocks or areas to invest 
-- [x] news sentiment
-- [ ] historic data info
-- [ ] balance sheet
-- [ ] personel (linkedin)
-- [x] add backtesting
-
-decision algorithm: rank best to buy and sell
-- [x] simple average of news sentiment
-- [ ] ask gpt
-- [x] avg cost strategy
-
-app
-- [x] page1 QA
-- [x] page2 stock strategy
-- [ ] page3 chat
-
-more stuff:
-- [x] buy/hold
-- [x] sell
-- [x] add/swap to new stocks
-- [ ] add bonds interest rate
-
-output:
-- [x] average-cost stat output profile files .xlsx
-- [ ] email alert when to put money every month
-- [x] backtest comparison graph
-- [ ] graph of prediction
-- [ ] optional: alpaca api to auto-execute trade
-
+Use this to create a hugginface dataset to train a model
+```
+python fin_data.py
+```
+Then run this to train a model
+```
+python fin_train.py
+```
 

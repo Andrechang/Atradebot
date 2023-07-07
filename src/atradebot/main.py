@@ -2,7 +2,7 @@ import pandas as pd
 import tweepy
 from argparse import ArgumentParser
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import yfinance as yf
 import shutil 
 import math
@@ -10,11 +10,16 @@ import yaml
 import requests
 from bs4 import BeautifulSoup
 import trafilatura
+from trafilatura.settings import use_config
+
 from nltk import tokenize
 from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import pipeline
 from dateutil.relativedelta import relativedelta
 from tqdm import tqdm 
+
+trafilatura_config = use_config()
+trafilatura_config.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
 
 DATE_FORMAT = "%Y-%m-%d"
 
@@ -24,14 +29,6 @@ def pd_append(df, dict_d):
 def get_price(stock):
     ticker = yf.Ticker(stock).info
     return ticker['regularMarketOpen']
-
-
-
-# user finance plan input
-# TODO: add saved income to balance
-# TODO: control time of the news to collect (googlefinance extra)
-
-
 
 # holdings: Name, Qnt, UCost (unit cost), BaseCost, Price (current price), Value (current Value), LongGain (Qnt), ShortGain (Qnt)
 # activity: Name, type (buy/sell), TB (time bought), Qnt, Proceed
@@ -52,6 +49,100 @@ def get_arg(raw_args=None):
     config = get_config(args.cfg)
     config.update(vars(args))
     return args, config
+
+# run financial sentiment analysis model
+def get_sentiment(text, model, max_length=512):
+    sentences = tokenize.sent_tokenize(text)
+    # truncate sentences that are too long
+    for i, s in enumerate(sentences):
+        if len(s) > max_length:
+            sentences[i] = sentences[i][:max_length]
+
+    sentiment = model(sentences)
+    sum, neutrals = 0, 0
+    if len(sentiment) > 0:
+        for r in sentiment: 
+            sum += (r["label"] == "Positive")
+            neutrals += (r["label"] == "Neutral")
+
+        den = len(sentiment)-neutrals
+        sentiment = sum/den if den > 0 else 1.0 # as all neutral
+    return sentiment
+
+def is_business_day(date):
+    return bool(len(pd.bdate_range(date, date)))
+
+#add/subtract business days
+def business_days(start_date, num_days):
+    current_date = start_date
+    business_days_added = 0
+    while business_days_added < abs(num_days):
+        if num_days < 0:
+            current_date -= timedelta(days=1)
+        else:
+            current_date += timedelta(days=1)
+        if current_date.weekday() < 5:  # Monday to Friday
+            business_days_added += 1
+    return current_date
+
+def get_forecast(stock, date):
+    """get forecast for stock on date
+    Args:
+        stock (string): stock id
+        date (string): date format 'Feb 2, 2019' "%b %d, %Y"
+
+    Returns:
+        forecast: forecast list [1mon, 5mon, 1 yr], higher than 1. percent increase, lower than 1. percent decrease
+    """    
+    s = datetime.strptime(date, "%b %d, %Y")
+    e = business_days(s, +3)
+    data = yf.Ticker(stock)
+    hdata = data.history(start=s.strftime("%Y-%m-%d"),  end=e.strftime("%Y-%m-%d"))
+    price = hdata['Close'].mean()
+
+    forecast = [0, 0, 0]
+    add_days = [21, 5*21, 12*21] #add business days
+    for idx, adays in enumerate(add_days):
+        s = business_days(s, adays)#look into future
+        e = business_days(s, +3)
+        hdata = data.history(start=s.strftime("%Y-%m-%d"),  end=e.strftime("%Y-%m-%d"))
+        forecast[idx] = hdata['Close'].mean()/price
+    
+    return forecast
+
+# collect google search text 
+def get_google_news(stock, num_results=10, time_period=[]):
+    # time_period=['2019-06-28' (start_time), '2019-06-29' (end_time)]
+    query = stock
+    headers = {
+            "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36"
+        }
+    if time_period:
+        query += f"+before%3A{time_period[1]}+after%3A{time_period[0]}" # add time range     
+    search_req = "https://www.google.com/search?q="+query+"&gl=us&tbm=nws&num="+str(num_results)+""
+    #https://developers.google.com/custom-search/docs/xml_results#WebSearch_Request_Format
+    news_results = []
+    # get webpage content
+    response = requests.get(search_req, headers=headers)
+    soup = BeautifulSoup(response.content, "html.parser")
+    for el in soup.select("div.SoaBEf"):
+        sublink = el.find("a")["href"]
+        downloaded = trafilatura.fetch_url(sublink)
+        html_text = trafilatura.extract(downloaded, config=trafilatura_config)
+        if html_text:
+            news_results.append(
+                {
+                    "link": el.find("a")["href"],
+                    "title": el.select_one("div.MBeuO").get_text(),
+                    "snippet": el.select_one(".GI74Re").get_text(),
+                    "date": el.select_one(".LfVVr").get_text(),
+                    "source": el.select_one(".NUnG9d span").get_text(),
+                    "text": html_text,
+                    "stock": stock,
+                }
+            )
+    return news_results, search_req, soup
 
 class TradingBot:
     def __init__(self, cfg):
@@ -132,56 +223,7 @@ class TradingBot:
         tokenizer = BertTokenizer.from_pretrained('yiyanghkust/finbert-tone')
         self.sentiment_analyzer = pipeline("sentiment-analysis", model=finbert, tokenizer=tokenizer)
 
-    # collect google search text and sentiment score
-    def get_google_news(self, query, num_results=10, max_length=512):
-        headers = {
-                "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36"
-            }
-
-        search_req = "https://www.google.com/search?q="+query+"&gl=us&tbm=nws&num="+str(num_results)+""
-
-        news_results = []
-        
-        # get webpage content
-        response = requests.get(search_req, headers=headers)
-        soup = BeautifulSoup(response.content, "html.parser")
-
-        for el in soup.select("div.SoaBEf"):
-            sublink = el.find("a")["href"]
-            downloaded = trafilatura.fetch_url(sublink)
-            html_text = trafilatura.extract(downloaded)
-            if html_text:
-                sentences = tokenize.sent_tokenize(html_text)
-                # truncate sentences that are too long
-                for i, s in enumerate(sentences):
-                    if len(s) > max_length:
-                        sentences[i] = sentences[i][:max_length]
-
-                sentiment = self.sentiment_analyzer(sentences)
-                sum = 0
-                neutrals = 0
-                if len(sentiment) > 0:
-                    for r in sentiment: 
-                        sum += (r["label"] == "Positive")
-                        neutrals += (r["label"] == "Neutral")
-
-                    den = len(sentiment)-neutrals
-                    sentiment = sum/den if den > 0 else 1.0 # as all neutral
-
-                    news_results.append(
-                        {
-                            "link": el.find("a")["href"],
-                            "title": el.select_one("div.MBeuO").get_text(),
-                            "snippet": el.select_one(".GI74Re").get_text(),
-                            "date": el.select_one(".LfVVr").get_text(),
-                            "source": el.select_one(".NUnG9d span").get_text(),
-                            "text": html_text,
-                            "sentiment": sentiment,
-                        }
-                    )
-
-        return news_results, search_req
+    
 
     # get the news from: google, TODO yfinance, twitter, 
     def get_news(self):
@@ -189,13 +231,14 @@ class TradingBot:
             #twitter
             # posts = self.api.user_timeline(screen_name="BillGates", count = 100, lang ="en", tweet_mode="extended")
             # df = pd.DataFrame([tweet.full_text for tweet in posts], columns=['Tweets'])
-
+            #reddit
+            #blind
             # get google text news
-            gnews, _ = self.get_google_news(stock)
-            # Time,Name,Text,Score,Link
-            for gnew in gnews:
-                self.news = pd_append(self.news, {'Time': gnew["date"], 'Name': stock, 
-                    'Text': gnew["text"], 'Score': gnew["sentiment"], 'Link': gnew["link"], 'Snippet': gnew["snippet"]})
+            gnews, _, _ = get_google_news(stock)
+            
+            df = pd.DataFrame(gnews)
+            self.news = pd.concat([self.news, df],ignore_index=True)
+
         #filter repeated news
         self.news = self.news.drop_duplicates(subset=['Text'])
 
@@ -217,9 +260,8 @@ class TradingBot:
         self.stock_rank = {}
         # self.get_stats()
         # TODO: +historical data analysis
-
         # TODO: AutoGPT? FinNLP analysis
-        
+        self.news['embeddings'] = self.news['text'].apply(get_sentiment, args=(self.sentiment_analyzer,))
 
         # simple mean of sentiment score ranking
         mean_score = []
@@ -320,9 +362,8 @@ if __name__ == "__main__":
     prev_analysis_date = datetime.strptime(bot.balance['Time'].values[-1], DATE_FORMAT) #get last analysis date
     interval_date = today_date - prev_analysis_date
 
-    # bot.get_news() #run news checks
-    # print(bot.news)
     if interval_date.days >= config['INTERVAL_ANALYSIS'] or args.mode == 'debug':
+        bot.get_news() #run news checks
         bot.get_rank() # rank for suggestion
         print(bot.stock_rank)
         approve = input("Do you want to execute? (y/n)")

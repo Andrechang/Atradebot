@@ -1,8 +1,9 @@
 import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
-from src.atradebot import backtest
+from atradebot import backtest, main
 import matplotlib.pyplot as plt
 import yfinance as yf
+from datetime import date, datetime
 
 
 
@@ -40,7 +41,20 @@ data_my = backtester.portfolio['Total'][idx:]
 plt = backtest.plot_cmp({"SPY":data_spy/data_spy[0], #normalize gains
         "MyPort":data_my/init_capital}, show=False)
 
-st.pyplot(plt)
+for date, alloct in backtester.activity:
+    idx = data.index.get_loc(date)
+    plt.scatter(date, backtester.portfolio['Total'][idx]/init_capital, color='blue')
+    print_alloc = f"{date.strftime(main.DATE_FORMAT)}: "
+    for k, v in alloct.items():
+        if v > 0:
+            print_alloc += f" Buy {v} shares of {k} "
+        elif v < 0:
+            print_alloc += f" Sell {v} shares of {k} "
+    st.write(print_alloc)
+
+st.pyplot(plt, use_container_width=False)
+
+
 
 submitted = st.button("Learn more")
 if submitted:
