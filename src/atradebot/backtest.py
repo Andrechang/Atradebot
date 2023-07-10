@@ -13,8 +13,12 @@ from fin_train import FinForecastStrategy
 
 def get_args(raw_args=None):
     parser = ArgumentParser(description="parameters")
-    parser.add_argument('-m', '--mode', type=str,
-                        default='simple', help='Modes: simple, news_sentiment')
+    parser.add_argument('-m', '--mode', type=str, default='simple', help='Modes: simple, news_sentiment')
+    parser.add_argument('--init_capital', type=int, default=10000, help='initial capital')
+    parser.add_argument('--past_date', type=str, default="2019-01-31", help='pasta date for data')
+    parser.add_argument('--start_date', type=str, default="2022-01-31", help='start date for trading analysis')
+    parser.add_argument('--end_date', type=str, default="2023-05-20", help='end data for trading analysis')
+    parser.add_argument('--stocks', type=str, default="AAPL ABBV AMZN MSFT NVDA TSLA", help='stocks to analize')
     args = parser.parse_args(raw_args)
     return args
 
@@ -139,24 +143,25 @@ def plot_cmp(stocks, show=False):
 if __name__ == "__main__":
 
     args = get_args()
+    print('Mode for analysis:', args.mode)
+    print('past date for analysis:', args.past_date)
+    print('start date for analysis:', args.start_date)
+    print('end data for analysis:', args.end_date)
+    stocks_s = args.stocks.split()
+    stocks = stocks_s + ['SPY', 'VUG', 'VOO']
+    print('Selected stocks:', stocks_s, stocks)
+    print('Initial capital:', args.init_capital)
     
-    # Example usage
-    past_date = "2019-01-31" 
-    start_date = "2022-01-31"  
-    end_date = "2023-05-20" 
-    stocks = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA', 'SPY', 'VUG', 'VOO']
-    data = yf.download(stocks, start=past_date, end=end_date)
-    INIT_CAPITAL = 10000
+    # get data:
+    data = yf.download(stocks, start=args.past_date, end=args.end_date)
 
     # Create a portfolio backtester instance
-    backtester = PortfolioBacktester(initial_capital=INIT_CAPITAL, data=data, stocks=stocks, start_date=start_date)
+    backtester = PortfolioBacktester(initial_capital=args.init_capital, data=data, stocks=stocks, start_date=args.start_date)
 
-
-    stocks_s = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA']
     if args.mode == 'simple':
-        strategy = SimpleStrategy(start_date, end_date, data, stocks, INIT_CAPITAL)
+        strategy = SimpleStrategy(args.start_date, args.end_date, data, stocks, args.init_capital)
     elif args.mode == 'news_sentiment':
-        strategy = FinForecastStrategy(start_date, end_date, data, stocks_s, INIT_CAPITAL)
+        strategy = FinForecastStrategy(args.start_date, args.end_date, data, stocks_s, args.init_capital)
     else:
         print('Mode not recognized!')
         exit(1)
@@ -168,14 +173,14 @@ if __name__ == "__main__":
     portfolio_value = backtester.get_portfolio_value()
     print(portfolio_value)
 
-    idx = data.index.get_loc(start_date)
+    idx = data.index.get_loc(args.start_date)
     data_spy = data['Close']['SPY'][idx:]
     data_my = backtester.portfolio['Total'][idx:]
     plt = plot_cmp({"SPY":data_spy/data_spy[0], #normalize gains
-            "MyPort":data_my/INIT_CAPITAL}, show=False)
+            "MyPort":data_my/args.init_capital}, show=False)
 
     for date, alloct in backtester.activity:
         idx = data.index.get_loc(date)
-        plt.scatter(date, backtester.portfolio['Total'][idx]/INIT_CAPITAL, color='blue')
+        plt.scatter(date, backtester.portfolio['Total'][idx]/args.init_capital, color='blue')
         print(date, alloct)
     plt.show()
