@@ -183,4 +183,5 @@ if __name__ == "__main__":
         idx = data.index.get_loc(date)
         plt.scatter(date, backtester.portfolio['Total'][idx]/args.init_capital, color='blue')
         print(date, alloct)
+        
     plt.show()
