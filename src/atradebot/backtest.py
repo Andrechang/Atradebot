@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from argparse import ArgumentParser
 from datetime import date, datetime
 import yfinance as yf
 from dateutil.relativedelta import relativedelta
@@ -7,7 +8,15 @@ import matplotlib.pyplot as plt
 from pypfopt import risk_models, expected_returns
 from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
 from pypfopt.efficient_frontier import EfficientFrontier
-from atradebot.fin_train import FinForecastStrategy
+from fin_train import FinForecastStrategy
+
+
+def get_args(raw_args=None):
+    parser = ArgumentParser(description="parameters")
+    parser.add_argument('-m', '--mode', type=str,
+                        default='simple', help='Modes: simple, news_sentiment')
+    args = parser.parse_args(raw_args)
+    return args
 
 
 pd.options.mode.chained_assignment = None
@@ -128,6 +137,8 @@ def plot_cmp(stocks, show=False):
     return plt
 
 if __name__ == "__main__":
+
+    args = get_args()
     
     # Example usage
     past_date = "2019-01-31" 
@@ -142,8 +153,13 @@ if __name__ == "__main__":
 
 
     stocks_s = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA']
-    # strategy = SimpleStrategy(start_date, end_date, data, stocks, INIT_CAPITAL)
-    strategy = FinForecastStrategy(start_date, end_date, data, stocks_s, INIT_CAPITAL)
+    if args.mode == 'simple':
+        strategy = SimpleStrategy(start_date, end_date, data, stocks, INIT_CAPITAL)
+    elif args.mode == 'news_sentiment':
+        strategy = FinForecastStrategy(start_date, end_date, data, stocks_s, INIT_CAPITAL)
+    else:
+        print('Mode not recognized!')
+        exit(1)
 
     # Run the backtest using the simple strategy
     backtester.run_backtest(strategy)
