@@ -25,6 +25,11 @@ Use this to test different strategies using past historical data
 ```
 python backtest.py
 ```
+more params:
+
+```
+python src/atradebot/backtest.py --mode simple --init_capital 10000 --start_date 2022-01-31 --end_date 2023-05-20 --stocks "AAPL ABBV AMZN MSFT NVDA TSLA"
+```
 
 ### Set to run everyday
 Go to folder `src/atradebot`
