@@ -17,6 +17,7 @@ from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import pipeline
 from dateutil.relativedelta import relativedelta
 from tqdm import tqdm 
+from atradebot import news_util
 
 trafilatura_config = use_config()
 trafilatura_config.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
@@ -110,40 +111,6 @@ def get_forecast(stock, date):
     
     return forecast
 
-# collect google search text 
-def get_google_news(stock, num_results=10, time_period=[]):
-    # time_period=['2019-06-28' (start_time), '2019-06-29' (end_time)]
-    query = stock
-    headers = {
-            "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36"
-        }
-    if time_period:
-        query += f"+before%3A{time_period[1]}+after%3A{time_period[0]}" # add time range     
-    search_req = "https://www.google.com/search?q="+query+"&gl=us&tbm=nws&num="+str(num_results)+""
-    #https://developers.google.com/custom-search/docs/xml_results#WebSearch_Request_Format
-    news_results = []
-    # get webpage content
-    response = requests.get(search_req, headers=headers)
-    soup = BeautifulSoup(response.content, "html.parser")
-    for el in soup.select("div.SoaBEf"):
-        sublink = el.find("a")["href"]
-        downloaded = trafilatura.fetch_url(sublink)
-        html_text = trafilatura.extract(downloaded, config=trafilatura_config)
-        if html_text:
-            news_results.append(
-                {
-                    "link": el.find("a")["href"],
-                    "title": el.select_one("div.MBeuO").get_text(),
-                    "snippet": el.select_one(".GI74Re").get_text(),
-                    "date": el.select_one(".LfVVr").get_text(),
-                    "source": el.select_one(".NUnG9d span").get_text(),
-                    "text": html_text,
-                    "stock": stock,
-                }
-            )
-    return news_results, search_req, soup
-
 class TradingBot:
     def __init__(self, cfg):
         self.config = cfg
@@ -234,7 +201,7 @@ class TradingBot:
             #reddit
             #blind
             # get google text news
-            gnews, _, _ = get_google_news(stock)
+            gnews, _, _ = news_util.get_google_news(stock)
             
             df = pd.DataFrame(gnews)
             self.news = pd.concat([self.news, df],ignore_index=True)

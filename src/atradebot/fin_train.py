@@ -23,15 +23,15 @@ from sklearn.metrics import mean_squared_error
 import re
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
-from atradebot import main
+from atradebot import main, news_util
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-HUB_MODEL = "achang/fin_forecast_tmp" # Change here to use your own model
-HUB_DATA = 'achang/stock_forecast_tmp'# Change here to use your own data
-OUTFOLDER = 'exp2'
+HUB_MODEL = "achang/fin_alloc" # Change here to use your own model
+HUB_DATA = 'achang/stock_alloc'# Change here to use your own data
+OUTFOLDER = 'exp3'
 IGNORE_INDEX = -100
 MICRO_BATCH_SIZE = 4  # change to 4 for 3090
 BATCH_SIZE = 16
@@ -96,7 +96,7 @@ def get_response(sequence, tokenizer):
         decoded = tokenizer.decode(sequence[response_pos + 1 : end_pos]).strip()
         return decoded    
     else:
-        return ""#tokenizer.decode(sequence[response_pos + 1 : ])
+        return ""
 
 def train_model(args):
     if args.mode == 'train':            
@@ -128,7 +128,6 @@ def train_model(args):
         model.gradient_checkpointing_enable()
         model = prepare_model_for_kbit_training(model)
         model = get_peft_model(model, config)
-
     else:
         model, tokenizer = get_model(HUB_MODEL)
 
@@ -149,7 +148,7 @@ def train_model(args):
         # auto_find_batch_size=True,
         per_device_train_batch_size=MICRO_BATCH_SIZE,
         gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-        num_train_epochs=100,
+        num_train_epochs=150,
         learning_rate=2e-5,
         fp16=True,
         save_total_limit=4,
@@ -214,6 +213,8 @@ def train_model(args):
         all_preds = [eval(i) for i in all_preds]
         print("MSE: ", mean_squared_error(all_targets, all_preds))
 
+
+
 class FinForecastStrategy:
     def __init__(self, start_date, end_date, data, stocks, cash=10000, model_id="achang/fin_forecast"):
         """
@@ -259,7 +260,7 @@ class FinForecastStrategy:
         start = main.business_days(end, -5)
         all_stocks = {}
         for stock in self.stocks:
-            news, _, _ = main.get_google_news(stock=stock, num_results=num_news, time_period=[start, end])
+            news, _, _ = news_util.get_google_news(stock=stock, num_results=num_news, time_period=[start, end])
             assert len(news) > 0, "no news found, google search blocked error"
             all_pred = []
             for new in news:
