@@ -1,4 +1,4 @@
-#create dataset for train model
+# create dataset for traininig sentiment model
 
 import os
 import pandas as pd
@@ -14,6 +14,7 @@ from tqdm import tqdm
 HF_forecast = "stock_forecast_sp500_2010q1_2023q2"
 HF_news = "stock_news_sp500_2010q1_2023q2"
 
+
 # find peaks and valleys
 def find_peaks_valleys(array):
     peaks = []
@@ -25,6 +26,7 @@ def find_peaks_valleys(array):
         elif array[i - off] > array[i] < array[i + off]:
             valleys.append(i)
     return peaks, valleys
+
 
 # ignore peaks and valleys that are too close to each other
 def filter_points(data, peak_idx, valley_idx):
@@ -41,6 +43,7 @@ def filter_points(data, peak_idx, valley_idx):
             valley_idx_n.append(valley_idx[idx])
         idx += 1
     return peak_idx_n, valley_idx_n
+
 
 # collect news around stock price peaks and valleys
 def gen_news_dataset(stocks, start_date, end_date, to_hub=False, num_news=10):
@@ -103,6 +106,7 @@ def gen_news_dataset(stocks, start_date, end_date, to_hub=False, num_news=10):
 
     return dataset
 
+
 def generate_json(data, to_hub=False): 
     #json dataset for lit-llama
     file_data = []
@@ -125,8 +129,8 @@ def combine_datasets():
     # https://github.com/miguelaenlle/Scraping-Tools-Benzinga/blob/master/scrape_benzinga.py
     #2) finviz: https://www.kaggle.com/datasets?search=finviz
 
-
     return None
+
 
 if __name__ == "__main__":
     
@@ -138,9 +142,3 @@ if __name__ == "__main__":
     end_date = "2023-06-20"
     dataset = gen_news_dataset(stocks, start_date, end_date, to_hub=True)
     generate_json(dataset, to_hub=True)
-
-
-
-
-
-

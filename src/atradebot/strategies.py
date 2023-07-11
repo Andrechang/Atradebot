@@ -10,6 +10,7 @@ import torch
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
+
 # Define a simple strategy that allocates 50% of the portfolio on the first day
 def max_sharpe_allocation(data, amount_invest):
     mu = expected_returns.mean_historical_return(data)
@@ -21,6 +22,7 @@ def max_sharpe_allocation(data, amount_invest):
     da = DiscreteAllocation(cleaned_weights, latest_prices, total_portfolio_value=amount_invest)
     allocation, leftover = da.greedy_portfolio()
     return allocation, leftover
+
 
 
 class SimpleStrategy:
@@ -60,7 +62,6 @@ class SimpleStrategy:
             return allocation
         else:
             return self.stocks
-
 
 
 
