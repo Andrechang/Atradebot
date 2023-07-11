@@ -3,10 +3,13 @@ import pandas as pd
 # import tweepy
 from argparse import ArgumentParser
 import os
+import math
+# from tqdm import tqdm
 from datetime import date, datetime, timedelta
 import shutil
 from utils import is_business_day, business_days
-from utils import get_config, get_sentiment, get_forecast, get_google_news
+from utils import get_config, get_price, pd_append
+from utils import get_sentiment, get_forecast, get_google_news
 
 # from nltk import tokenize
 # from transformers import BertTokenizer, BertForSequenceClassification
@@ -37,7 +40,7 @@ class TradingBot:
         self.stats = {} #stats for stocks: dict {stock: history data}
         self.stock_rank = {} #ranked stocks: dict{stock: {decision: buy/sell,  news: [ranked news], info: "analysis" } }
         
-        # self.init_model()#init sentiment analysis model
+        # self.init_model() #init sentiment analysis model
 
     # PROFILE SAVING===================================================================================================
     
@@ -110,7 +113,9 @@ class TradingBot:
 
     # get the news from: google, TODO yfinance, twitter, 
     def get_news(self):
-        for stock in tqdm(list(self.holdings['Name'])):
+        print("Getting news:")
+        for stock in self.config['STOCKS2CHECK']:
+            print('\t', stock)
             #twitter
             # posts = self.api.user_timeline(screen_name="BillGates", count = 100, lang ="en", tweet_mode="extended")
             # df = pd.DataFrame([tweet.full_text for tweet in posts], columns=['Tweets'])
@@ -144,7 +149,11 @@ class TradingBot:
         # self.get_stats()
         # TODO: +historical data analysis
         # TODO: AutoGPT? FinNLP analysis
-        self.news['embeddings'] = self.news['text'].apply(get_sentiment, args=(self.sentiment_analyzer,))
+        # text = self.news['text']
+        # print(text)
+        # sentences = tokenize.sent_tokenize(self.news['text'])
+        # sentences = tokenizer(text, return_tensors="pt")
+        # self.news['embeddings'] = sentences.apply(get_sentiment, args=(self.sentiment_analyzer,))
 
         # simple mean of sentiment score ranking
         mean_score = []
@@ -190,7 +199,7 @@ class TradingBot:
                     self.balance.at[0, 'Cash'] -= asset_value
 
             elif value['decision'] < 0: #sell
-                #TODO: get oldest qnt and reduce it
+                # TODO: get oldest qnt and reduce it
                 holding_qnt = self.holdings.at[stock_idx, 'Qnt']
                 qnt = abs(value['decision']) if abs(value['decision']) <= holding_qnt else holding_qnt
                 asset_value = price*qnt
@@ -239,13 +248,13 @@ class TradingBot:
 if __name__ == "__main__":
     args, config = get_arg()
 
-    bot = TradingBot(config)# Create an instance of the trading bot
+    bot = TradingBot(config) # Create an instance of the trading bot
     today_date = datetime.today()
     prev_analysis_date = datetime.strptime(bot.balance['Time'].values[-1], DATE_FORMAT) #get last analysis date
     interval_date = today_date - prev_analysis_date
 
     if interval_date.days >= config['INTERVAL_ANALYSIS'] or args.mode == 'debug':
-        bot.get_news() #run news checks
+        bot.get_news() # run news checks
         bot.get_rank() # rank for suggestion
         print(bot.stock_rank)
         approve = input("Do you want to execute? (y/n)")
@@ -253,4 +262,5 @@ if __name__ == "__main__":
             bot.execute(bot.stock_rank)
         else:
             pass
-    bot.save_back() #create backup
+
+    bot.save_back() # create backup

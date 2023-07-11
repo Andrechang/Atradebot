@@ -1,7 +1,9 @@
 
+import pandas as pd
 from datetime import date, datetime, timedelta
 import yaml
 import requests
+import yfinance as yf
 from bs4 import BeautifulSoup
 import trafilatura
 from trafilatura.settings import use_config
@@ -37,7 +39,6 @@ def get_price(stock):
     return ticker['regularMarketOpen']
 
 
-
 # holdings: Name, Qnt, UCost (unit cost), BaseCost, Price (current price), Value (current Value), LongGain (Qnt), ShortGain (Qnt)
 # activity: Name, type (buy/sell), TB (time bought), Qnt, Proceed
 # balance: Time, Cash, Stock, Total
@@ -49,8 +50,7 @@ def get_config(cfg_file):
 
 
 # run financial sentiment analysis model
-def get_sentiment(text, model, max_length=512):
-    sentences = tokenize.sent_tokenize(text)
+def get_sentiment(sentences, model, max_length=512):
     # truncate sentences that are too long
     for i, s in enumerate(sentences):
         if len(s) > max_length:
@@ -92,6 +92,7 @@ def get_forecast(stock, date):
         forecast[idx] = hdata['Close'].mean()/price
     
     return forecast
+
 
 # collect google search text 
 def get_google_news(stock, num_results=10, time_period=[]):
