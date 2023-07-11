@@ -143,6 +143,7 @@ class FinForecastStrategy:
             all_stocks[stock] = avg_pred
         return all_stocks
 
+
     def model_allocation(self, date, amount_invest, prices, portfolio, sell_mode=False):
         """get allocation for each stock based on model predictions
         Args:

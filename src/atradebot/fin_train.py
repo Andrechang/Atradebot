@@ -1,8 +1,7 @@
-#model to generate news for a stock
-#from: https://huggingface.co/dfurman/falcon-40b-chat-oasst1/blob/main/finetune_falcon40b_oasst1_with_bnb_peft.ipynb
-#https://huggingface.co/blog/falcon
+# model to generate news for a stock
+# from: https://huggingface.co/dfurman/falcon-40b-chat-oasst1/blob/main/finetune_falcon40b_oasst1_with_bnb_peft.ipynb
+# https://huggingface.co/blog/falcon
 # https://colab.research.google.com/drive/1n5U13L0Bzhs32QO_bls5jwuZR62GPSwE?usp=sharing
-
 
 import os
 import sys

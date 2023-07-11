@@ -5,7 +5,8 @@ from argparse import ArgumentParser
 import os
 from datetime import date, datetime, timedelta
 import shutil
-from utils import get_config, is_business_day, business_days
+from utils import is_business_day, business_days
+from utils import get_config, get_sentiment, get_forecast, get_google_news
 
 # from nltk import tokenize
 # from transformers import BertTokenizer, BertForSequenceClassification
@@ -71,7 +72,7 @@ class TradingBot:
 
     #save backup
     def save_back(self):
-        dir_bk = 'backup' + str(datetime.today().strftime(DATE_FORMAT))
+        dir_bk = 'backup-' + str(datetime.today().strftime(DATE_FORMAT))
         if not os.path.exists(dir_bk):
             os.mkdir(dir_bk)
         shutil.copy(self.config['SAVE_FILE'], dir_bk)         
