@@ -7,13 +7,13 @@ import yfinance as yf
 
 @pytest.mark.test0
 def test_get_profile():
-    _, config = main.get_arg()
+    _, config = main.get_arg([])
     bot = main.TradingBot(config)
     assert not bot.holdings.empty
 
 @pytest.mark.test0
 def test_get_news():
-    _, config = main.get_arg()
+    _, config = main.get_arg([])
     bot = main.TradingBot(config)
     bot.get_news()
     assert not bot.news.empty

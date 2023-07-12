@@ -1,4 +1,4 @@
-#create dataset for train model
+# create dataset for training sentiment model
 
 import os
 import pandas as pd
@@ -14,6 +14,7 @@ from tqdm import tqdm
 HF_forecast = "stock_forecast_sp500_2010q1_2023q2"
 HF_news = "stock_news_sp500_2010q1_2023q2"
 
+
 # find peaks and valleys
 def find_peaks_valleys(array):
     peaks = []
@@ -25,6 +26,7 @@ def find_peaks_valleys(array):
         elif array[i - off] > array[i] < array[i + off]:
             valleys.append(i)
     return peaks, valleys
+
 
 # ignore peaks and valleys that are too close to each other
 def filter_points(data, peak_idx, valley_idx):
@@ -189,8 +191,8 @@ def combine_datasets():
     # https://github.com/miguelaenlle/Scraping-Tools-Benzinga/blob/master/scrape_benzinga.py
     #2) finviz: https://www.kaggle.com/datasets?search=finviz
 
-
     return None
+
 
 if __name__ == "__main__":
     
@@ -204,9 +206,3 @@ if __name__ == "__main__":
     # dataset = load_dataset('achang/stock_news_0')
     # generate_forecast_task(dataset, to_hub=True)
     # generate_allocation_task(dataset, to_hub=True)
-
-
-
-
-
-
