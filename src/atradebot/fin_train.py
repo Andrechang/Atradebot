@@ -1,4 +1,4 @@
-# model finetuning for news and stock forecasting
+# train a neuranl net model on Yahoo Finance data API, Google News
 # from: https://huggingface.co/dfurman/falcon-40b-chat-oasst1/blob/main/finetune_falcon40b_oasst1_with_bnb_peft.ipynb
 # https://huggingface.co/blog/falcon
 # https://colab.research.google.com/drive/1n5U13L0Bzhs32QO_bls5jwuZR62GPSwE?usp=sharing
@@ -39,6 +39,7 @@ GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
 INSTRUCTION_KEY = "### Instruction:"
 RESPONSE_KEY = "### Response:"
 END_KEY = "### End"
+
 
 def generate_prompt(data_point, mode='train'):
     # from https://github.com/tloen/alpaca-lora
@@ -221,8 +222,7 @@ def get_parser(raw_args=None):
     args = parser.parse_args(raw_args)
     return args
 
+
 if __name__ == "__main__":
     args = get_parser()
     train_model(args)
-
-

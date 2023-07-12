@@ -1,6 +1,7 @@
-# create dataset for training sentiment model
+# create dataset for training a financial model on Yahoo Finance data API, Google News
 
 import os
+from argparse import ArgumentParser
 import pandas as pd
 import yfinance as yf
 import numpy as np
@@ -10,6 +11,7 @@ import time
 import json
 from datasets import load_dataset, Dataset
 from tqdm import tqdm
+
 
 # find peaks and valleys
 def find_peaks_valleys(array):
@@ -40,6 +42,7 @@ def filter_points(data, peak_idx, valley_idx):
         idx += 1
     return peak_idx_n, valley_idx_n
 
+
 def collect_events(stock, start_date, end_date, ret=False):
     """collect events to gather news
     Args:
@@ -69,6 +72,7 @@ def collect_events(stock, start_date, end_date, ret=False):
     events.sort()
     events_dates = [data.index[event] for event in events]
     return events_dates
+
 
 def gen_news_dataset(stocks, start_date, end_date, num_news=5, sample_mode = 'sp500', news_source = 'finhub'):
     """collect news at specific dates for stocks
@@ -142,6 +146,7 @@ def gen_news_dataset(stocks, start_date, end_date, num_news=5, sample_mode = 'sp
     dataset = Dataset.from_list(all_news)
     return dataset
 
+
 def generate_forecast_task(data, to_hub=False): 
     #json dataset for lit-llama
     file_data = []
@@ -154,6 +159,7 @@ def generate_forecast_task(data, to_hub=False):
     with open("stock_forecast.json", "w") as outfile:
         json.dump(file_data, outfile)
     return dataset
+
 
 def generate_allocation_task(data, to_hub=False): 
 
@@ -179,6 +185,7 @@ def generate_allocation_task(data, to_hub=False):
         json.dump(file_data, outfile)
     return dataset
 
+
 def combine_datasets():
     #combine all news datasets into one
     #1) benzinga: https://www.kaggle.com/datasets/miguelaenlle/massive-stock-news-analysis-db-for-nlpbacktests?resource=download&select=raw_analyst_ratings.csv
@@ -187,7 +194,6 @@ def combine_datasets():
 
     return None
 
-from argparse import ArgumentParser
 
 def get_arg(raw_args=None):
     parser = ArgumentParser(description="parameters")
@@ -203,10 +209,9 @@ def get_arg(raw_args=None):
     args = parser.parse_args(raw_args)
     return args
 
+
 if __name__ == "__main__":
-
     args = get_arg()
-
     stocks = args.stocks.split()
     if args.stocks == 'sp500':
         sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
