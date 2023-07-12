@@ -1,20 +1,18 @@
+# main app code
+# tries to keep track of your investments in a xlsx file, so that it will know what to do next time you run main again: sell or buy more
+
 
 import pandas as pd
-# import tweepy
 from argparse import ArgumentParser
 import os
 import math
-# from tqdm import tqdm
 from datetime import date, datetime, timedelta
+from dateutil.relativedelta import relativedelta
 import shutil
-from utils import is_business_day, business_days
-from utils import get_config, get_price, pd_append
-from utils import get_sentiment, get_forecast, get_google_news
-
-# from nltk import tokenize
-# from transformers import BertTokenizer, BertForSequenceClassification
-# from transformers import pipeline
-
+from atradebot.utils import is_business_day, business_days
+from atradebot.utils import get_config, get_price, pd_append
+from atradebot.utils import get_sentiment, get_forecast
+from atradebot import news_util
 
 def get_arg(raw_args=None):
     parser = ArgumentParser(description="parameters")
@@ -122,7 +120,7 @@ class TradingBot:
             #reddit
             #blind
             # get google text news
-            gnews, _, _ = get_google_news(stock)
+            gnews, _, _ = news_util.get_google_news(stock)
             
             df = pd.DataFrame(gnews)
             self.news = pd.concat([self.news, df],ignore_index=True)

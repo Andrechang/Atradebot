@@ -1,12 +1,20 @@
+# Add different strategies modules here
+# Strategy: needs one function that will be called by the backtester
+# Strategy must have function: generate_allocation with:
+# inputs: date, portfolio
+# outputs: dict of allocations for each stock
 
 from datetime import date, datetime
 from pypfopt import risk_models, expected_returns
 from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
 from pypfopt.efficient_frontier import EfficientFrontier
-
-from utils import business_days, get_google_news
-from fin_train import get_model, generate_prompt
+import re
+from atradebot.utils import business_days
+from atradebot.news_util import get_google_news, get_finhub_news
+from atradebot.fin_train import get_model, generate_prompt
 import torch
+import numpy as np
+from atradebot.fin_train import get_response
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 

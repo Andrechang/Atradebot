@@ -1,4 +1,4 @@
-# model to generate news for a stock
+# model finetuning for news and stock forecasting
 # from: https://huggingface.co/dfurman/falcon-40b-chat-oasst1/blob/main/finetune_falcon40b_oasst1_with_bnb_peft.ipynb
 # https://huggingface.co/blog/falcon
 # https://colab.research.google.com/drive/1n5U13L0Bzhs32QO_bls5jwuZR62GPSwE?usp=sharing
@@ -22,15 +22,15 @@ from sklearn.metrics import mean_squared_error
 import re
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
-import main
+from atradebot import main, news_util
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-HUB_MODEL = "achang/fin_forecast_tmp" # Change here to use your own model
-HUB_DATA = 'achang/stock_forecast_tmp'# Change here to use your own data
-OUTFOLDER = 'exp2'
+HUB_MODEL = "achang/fin_alloc" # Change here to use your own model
+HUB_DATA = 'achang/stock_alloc'# Change here to use your own data
+OUTFOLDER = 'exp3'
 IGNORE_INDEX = -100
 MICRO_BATCH_SIZE = 4  # change to 4 for 3090
 BATCH_SIZE = 16
@@ -95,7 +95,7 @@ def get_response(sequence, tokenizer):
         decoded = tokenizer.decode(sequence[response_pos + 1 : end_pos]).strip()
         return decoded    
     else:
-        return ""#tokenizer.decode(sequence[response_pos + 1 : ])
+        return ""
 
 def train_model(args):
     if args.mode == 'train':            
@@ -127,7 +127,6 @@ def train_model(args):
         model.gradient_checkpointing_enable()
         model = prepare_model_for_kbit_training(model)
         model = get_peft_model(model, config)
-
     else:
         model, tokenizer = get_model(HUB_MODEL)
 
@@ -148,7 +147,7 @@ def train_model(args):
         # auto_find_batch_size=True,
         per_device_train_batch_size=MICRO_BATCH_SIZE,
         gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-        num_train_epochs=100,
+        num_train_epochs=150,
         learning_rate=2e-5,
         fp16=True,
         save_total_limit=4,
@@ -212,7 +211,6 @@ def train_model(args):
         all_targets = [eval(i) for i in all_targets]
         all_preds = [eval(i) for i in all_preds]
         print("MSE: ", mean_squared_error(all_targets, all_preds))
-
 
 def get_parser(raw_args=None):
     parser = ArgumentParser(description="model")

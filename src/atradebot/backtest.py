@@ -1,14 +1,12 @@
+# Backtesting module for benchmarking portfolio strategies
+
 import pandas as pd
 import os
 from argparse import ArgumentParser
-# from datetime import date, datetime
 import yfinance as yf
 from dateutil.relativedelta import relativedelta
 import matplotlib.pyplot as plt
-# from pypfopt import risk_models, expected_returns
-# from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
-# from pypfopt.efficient_frontier import EfficientFrontier
-from strategies import SimpleStrategy, FinForecastStrategy
+from atradebot.strategies import SimpleStrategy, FinForecastStrategy
 
 
 def get_args(raw_args=None):

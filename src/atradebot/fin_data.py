@@ -1,10 +1,10 @@
-# create dataset for traininig sentiment model
+# create dataset for training sentiment model
 
 import os
 import pandas as pd
 import yfinance as yf
 import numpy as np
-from atradebot import main
+from atradebot import main, news_util
 from datasets import Dataset
 import time
 import json
@@ -44,70 +44,107 @@ def filter_points(data, peak_idx, valley_idx):
         idx += 1
     return peak_idx_n, valley_idx_n
 
+def collect_events(stock, start_date, end_date, ret=False):
+    """collect events to gather news
+    Args:
+        stock (str): stock id
+        start_date (str): date start to collect data in format yyyy-mm-dd
+        end_date (str): date end to collect data in format yyyy-mm-dd
+        ret (bool, optional): if True, return random events. Defaults to False.
+    Returns:
+        list[pandas.Timestamp]: list of dates to collect news
+    """    
+    data = yf.download(stock, start=start_date, end=end_date)
+    if data.empty or ret: # generate random events if no data
+        l = data.index.to_list()
+        events = [ll for i, ll in enumerate(l) if i%2]
+        return events
 
-# collect news around stock price peaks and valleys
-def gen_news_dataset(stocks, start_date, end_date, to_hub=False, num_news=10):
-    # data: pandas dataframe
-    # to_hub: bool, if true, upload to huggingface hub
+    data_mean = []
+    for i in range(len(data['Close'])-10):
+        data_mean.append(data['Close'][i:i+10].mean())
 
+    # collect when to gather news
+    p, v = find_peaks_valleys(data_mean)
+    # index of data_mean that are peaks and valleys
+    peak_idx, valley_idx = filter_points(data_mean, p, v) 
+    events = peak_idx + valley_idx #concat lists
+    events += [2] # add second day as first event to collect news
+    events.sort()
+    events_dates = [data.index[event] for event in events]
+    return events_dates
+
+def gen_news_dataset(stocks, start_date, end_date, to_hub=False, num_news=5):
+    """collect news at specific dates for stocks
+    GoogleSearch API only allows 100 requests per day
+    Args:
+        stocks (list[str]): list of stock ids
+        start_date (str): date start to collect data in format yyyy-mm-dd
+        end_date (str): date end to collect data in format yyyy-mm-dd
+        to_hub (bool, optional): save to huggingface hub. Defaults to False.
+        num_news (int, optional): number of news to collect. Defaults to 5.
+    Returns:
+        _type_: _description_
+    """    
+
+    sample_mode = 'sp500'#'sp500', 'stocks'
+    news_source = 'finhub'#'google', 'finhub'
     all_news = []
+
     done = [] #keep track of stocks already done
-    to_save = [] #keep track of stocks that need to be saved
-    if os.path.exists("saved_stocks.json"):
-        with open("saved_stocks.json", "r") as file:
-            done = json.load(file)
+    # to_save = [] #keep track of stocks that need to be saved
+    # if os.path.exists("saved_stocks.json"):
+    #     with open("saved_stocks.json", "r") as file:
+    #         done = json.load(file)
+
+    if sample_mode == 'samples':
+        events = collect_events('SPY', start_date, end_date, ret=True)
+    elif sample_mode == 'sp500':
+        events = collect_events('SPY', start_date, end_date)
 
     for stock in tqdm(stocks):
         if stock in done:
             continue
-        data = yf.download(stock, start=start_date, end=end_date)
-        if data.empty:
-            continue
+        if sample_mode == 'stocks':
+            events = collect_events(stock, start_date, end_date)
 
-        data_mean = []
-        for i in range(len(data['Close'])-10):
-            data_mean.append(data['Close'][i:i+10].mean())
-
-        p, v = find_peaks_valleys(data_mean)
-        # index of data_mean that are peaks and valleys
-        peak_idx, valley_idx = filter_points(data_mean, p, v) 
-        events = peak_idx + valley_idx #concat lists
-        events += [2] # add second day as first event to collect news
-        events.sort()
         print(f'{stock}, events {len(events)}')
         for event in events:
-            start = main.business_days(data.index[event], -1)#one day before
+            start = main.business_days(event, -1)#one day before
             start = start.strftime(main.DATE_FORMAT)
-            end = main.business_days(data.index[event], +1)#one day after
+            end = main.business_days(event, +1)#one day after
             end = end.strftime(main.DATE_FORMAT)
             try:
-                news, _, _ = main.get_google_news(stock=stock, num_results=num_news, time_period=[start, end])
+                if news_source == 'google':
+                    news, _, _ = news_util.get_google_news(stock=stock, num_results=num_news, time_period=[start, end])
+                else:
+                    news, _, _ = news_util.get_finhub_news(stock=stock, num_results=num_news, time_period=[start, end])
+
                 if news == []:
-                    print(f"Can't collect news for {stock} dates {start} to {end}, google maxed out")
+                    print(f"Can't collect news for {stock} dates {start} to {end}")
             except:
                 print(f"Can't collect news for {stock} dates {start} to {end}")
                 continue
             all_news += news
-            time.sleep(10)
+        time.sleep(5)
 
-        done.append(stock)
-        to_save.append(stock)
+        # done.append(stock)
+        # to_save.append(stock)
+        # if to_hub and len(to_save) > 5:
+        #     dataset = Dataset.from_list(all_news)
+        #     dataset.push_to_hub(f"achang/{HF_news}_{to_save[0]}_{to_save[-1]}")
+        #     to_save = []
+        #     time.sleep(30)
+        # with open("saved_stocks.json", "w") as file:
+        #     json.dump(done, file)
 
-        dataset = Dataset.from_list(all_news)
-
-        if to_hub and len(to_save) > 5:
-            dataset.push_to_hub(f"achang/{HF_news}_{to_save[0]}_{to_save[-1]}")
-            to_save = []
-            time.sleep(30)
-
-        with open("saved_stocks.json", "w") as file:
-            json.dump(done, file)
-
+    dataset = Dataset.from_list(all_news)
+    if to_hub:
+        dataset.push_to_hub(f"achang/stock_news_grouped")
 
     return dataset
 
-
-def generate_json(data, to_hub=False): 
+def generate_forecast_task(data, to_hub=False): 
     #json dataset for lit-llama
     file_data = []
     for sample in data:
@@ -122,6 +159,31 @@ def generate_json(data, to_hub=False):
     with open(f"{HF_forecast}.json", "w") as outfile:
         json.dump(file_data, outfile)
 
+def generate_allocation_task(data, to_hub=False): 
+
+    # collect news for similar dates on some stocks
+
+
+    file_data = []
+    for sample in data:
+        forecast = main.get_forecast(sample['stock'], sample['date'])
+
+        #collect news for similar dates on some stocks
+
+        #get forecast and apply simple buy/sell strategy
+
+        #generate output based on allocation
+
+        file_data.append({'instruction': f"what is the forecast for {sample['stock']}", 
+                        'input':f"{sample['date']} {sample['title']} {sample['snippet']}", 
+                        'output':f"{round(forecast[0], 2)}, {round(forecast[1],2)}, {round(forecast[2],2)}"})   
+
+    dataset = Dataset.from_pandas(pd.DataFrame(data=file_data))
+    if to_hub:
+        dataset.push_to_hub(f"achang/stock_alloc")
+
+    with open(f"stock_alloc.json", "w") as outfile:
+        json.dump(file_data, outfile)
 
 def combine_datasets():
     #combine all news datasets into one
@@ -137,8 +199,10 @@ if __name__ == "__main__":
     # sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
     # stocks = sp500.Symbol.to_list()
     stocks = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA']
-
-    start_date = "2018-01-31"  
+    start_date = "2022-01-31"  
     end_date = "2023-06-20"
-    dataset = gen_news_dataset(stocks, start_date, end_date, to_hub=True)
-    generate_json(dataset, to_hub=True)
+    # dataset = gen_news_dataset(stocks, start_date, end_date, to_hub=True)
+    
+    # dataset = load_dataset('achang/stock_news_0')
+    # generate_forecast_task(dataset, to_hub=True)
+    # generate_allocation_task(dataset, to_hub=True)
