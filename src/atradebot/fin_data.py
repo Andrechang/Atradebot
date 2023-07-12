@@ -11,10 +11,6 @@ import json
 from datasets import load_dataset, Dataset
 from tqdm import tqdm
 
-HF_forecast = "stock_forecast_sp500_2010q1_2023q2"
-HF_news = "stock_news_sp500_2010q1_2023q2"
-
-
 # find peaks and valleys
 def find_peaks_valleys(array):
     peaks = []
@@ -74,7 +70,7 @@ def collect_events(stock, start_date, end_date, ret=False):
     events_dates = [data.index[event] for event in events]
     return events_dates
 
-def gen_news_dataset(stocks, start_date, end_date, to_hub=False, num_news=5):
+def gen_news_dataset(stocks, start_date, end_date, num_news=5, sample_mode = 'sp500', news_source = 'finhub'):
     """collect news at specific dates for stocks
     GoogleSearch API only allows 100 requests per day
     Args:
@@ -83,12 +79,17 @@ def gen_news_dataset(stocks, start_date, end_date, to_hub=False, num_news=5):
         end_date (str): date end to collect data in format yyyy-mm-dd
         to_hub (bool, optional): save to huggingface hub. Defaults to False.
         num_news (int, optional): number of news to collect. Defaults to 5.
+        sample_mode (str, optional): 'sp500', sample or 'stocks'. Defaults to 'sp500'.
+            sample: collect news in random dates
+            stocks: collect news based on up and down changes for each stock
+            sp500: collect news based on up and down changes for SP500
+        news_source (str, optional): 'google' or 'finhub'. Defaults to 'finhub'.
     Returns:
-        _type_: _description_
+        huggingface dataset: dataset in hugginface format
     """    
+    assert sample_mode in ['sp500', 'stocks', 'samples']
+    assert news_source in ['google', 'finhub']
 
-    sample_mode = 'sp500'#'sp500', 'stocks'
-    news_source = 'finhub'#'google', 'finhub'
     all_news = []
 
     done = [] #keep track of stocks already done
@@ -139,9 +140,6 @@ def gen_news_dataset(stocks, start_date, end_date, to_hub=False, num_news=5):
         #     json.dump(done, file)
 
     dataset = Dataset.from_list(all_news)
-    if to_hub:
-        dataset.push_to_hub(f"achang/stock_news_grouped")
-
     return dataset
 
 def generate_forecast_task(data, to_hub=False): 
@@ -153,11 +151,9 @@ def generate_forecast_task(data, to_hub=False):
                         'input':f"{sample['date']} {sample['title']} {sample['snippet']}", 
                         'output':f"{round(forecast[0], 2)}, {round(forecast[1],2)}, {round(forecast[2],2)}"})   
     dataset = Dataset.from_pandas(pd.DataFrame(data=file_data))
-    if to_hub:
-        dataset.push_to_hub(f"achang/{HF_forecast}")
-
-    with open(f"{HF_forecast}.json", "w") as outfile:
+    with open("stock_forecast.json", "w") as outfile:
         json.dump(file_data, outfile)
+    return dataset
 
 def generate_allocation_task(data, to_hub=False): 
 
@@ -179,11 +175,9 @@ def generate_allocation_task(data, to_hub=False):
                         'output':f"{round(forecast[0], 2)}, {round(forecast[1],2)}, {round(forecast[2],2)}"})   
 
     dataset = Dataset.from_pandas(pd.DataFrame(data=file_data))
-    if to_hub:
-        dataset.push_to_hub(f"achang/stock_alloc")
-
-    with open(f"stock_alloc.json", "w") as outfile:
+    with open("stock_alloc.json", "w") as outfile:
         json.dump(file_data, outfile)
+    return dataset
 
 def combine_datasets():
     #combine all news datasets into one
@@ -193,16 +187,41 @@ def combine_datasets():
 
     return None
 
+from argparse import ArgumentParser
+
+def get_arg(raw_args=None):
+    parser = ArgumentParser(description="parameters")
+    parser.add_argument('-m', '--mode', type=str,
+                        default='forecast', help='Create dataset for task modes: forecast | allocation ')
+    parser.add_argument('-t', '--thub', type=str,
+                        default='', help='push to hub folder name for task dataset')
+    parser.add_argument('-r', '--rhub', type=str,
+                        default='achang/stocks_grouped', help='push to hub folder name for raw news data')
+    parser.add_argument('--start_date', type=str, default="2022-08-31", help='start date for trading analysis')
+    parser.add_argument('--end_date', type=str, default="2023-06-20", help='end data for trading analysis')
+    parser.add_argument('--stocks', type=str, default="AAPL AMZN MSFT NVDA TSLA", help='stocks to analize')
+    args = parser.parse_args(raw_args)
+    return args
 
 if __name__ == "__main__":
+
+    args = get_arg()
+
+    stocks = args.stocks.split()
+    if args.stocks == 'sp500':
+        sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
+        stocks = sp500.Symbol.to_list()
     
-    # sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
-    # stocks = sp500.Symbol.to_list()
-    stocks = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA']
-    start_date = "2022-01-31"  
-    end_date = "2023-06-20"
-    # dataset = gen_news_dataset(stocks, start_date, end_date, to_hub=True)
-    
-    # dataset = load_dataset('achang/stock_news_0')
-    # generate_forecast_task(dataset, to_hub=True)
-    # generate_allocation_task(dataset, to_hub=True)
+    dataset = gen_news_dataset(stocks, args.start_date, args.end_date, 
+                                sample_mode='sp500', news_source='finhub', num_news=20)
+    if args.rhub != '':
+        dataset.push_to_hub(args.rhub)
+
+    if args.mode == 'forecast':
+        data_task = generate_forecast_task(dataset)
+    else:
+        data_task = generate_allocation_task(dataset)
+
+    if args.hub != '':
+        data_task.push_to_hub(args.hub)
+        
