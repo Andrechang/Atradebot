@@ -11,7 +11,8 @@ from atradebot.strategies import SimpleStrategy, FinForecastStrategy
 
 def get_args(raw_args=None):
     parser = ArgumentParser(description="parameters")
-    parser.add_argument('-m', '--mode', type=str, default='simple', help='Modes: simple, news_sentiment')
+    parser.add_argument('--mode', type=str, default='simple', help='Modes: simple, news_sentiment')
+    parser.add_argument('-m', '--mhub', type=str, default='', help='get from hub folder model')
     parser.add_argument('--init_capital', type=int, default=10000, help='initial capital')
     parser.add_argument('--past_date', type=str, default="2019-01-31", help='pasta date for data')
     parser.add_argument('--start_date', type=str, default="2022-01-31", help='start date for trading analysis')
@@ -99,6 +100,7 @@ if __name__ == "__main__":
     print('Selected stocks:', stocks_s)
     print('Extended selected stocks:', stocks)
     print('Initial capital:', args.init_capital)
+    print('Model path:', args.mhub)
     
     # get data:
     data = yf.download(stocks, start=args.past_date, end=args.end_date)
@@ -109,7 +111,7 @@ if __name__ == "__main__":
     if args.mode == 'simple':
         strategy = SimpleStrategy(args.start_date, args.end_date, data, stocks, args.init_capital)
     elif args.mode == 'news_sentiment':
-        strategy = FinForecastStrategy(args.start_date, args.end_date, data, stocks_s, args.init_capital)
+        strategy = FinForecastStrategy(args.start_date, args.end_date, data, stocks_s, args.init_capital, model_id=args.mhub)
     else:
         print('Mode not recognized!')
         exit(1)

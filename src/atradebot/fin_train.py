@@ -13,7 +13,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import transformers
 from datasets import load_dataset
-from peft import PeftModel, PeftConfig, get_peft_model, LoraConfig, LoraConfig, get_peft_model #prepare_model_for_kbit_training,
+from peft import PeftModel, PeftConfig, get_peft_model, LoraConfig, LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from tqdm import tqdm
 import numpy as np
 from argparse import ArgumentParser
@@ -28,8 +28,6 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-HUB_MODEL = "achang/fin_alloc" # Change here to use your own model
-HUB_DATA = 'achang/stock_alloc'# Change here to use your own data
 OUTFOLDER = 'exp3'
 IGNORE_INDEX = -100
 MICRO_BATCH_SIZE = 4  # change to 4 for 3090
@@ -56,7 +54,7 @@ def generate_prompt(data_point, mode='train'):
     return prompt 
 
 
-def get_model(peft_model_id = HUB_MODEL):
+def get_model(peft_model_id):
     config = PeftConfig.from_pretrained(peft_model_id)
     model_id = config.base_model_name_or_path
     #load model and tokenizer with quantization
@@ -129,10 +127,10 @@ def train_model(args):
         model = prepare_model_for_kbit_training(model)
         model = get_peft_model(model, config)
     else:
-        model, tokenizer = get_model(HUB_MODEL)
+        model, tokenizer = get_model(args.mhub)
 
     #get data
-    data = load_dataset(HUB_DATA)
+    data = load_dataset(args.dhub)
 
     data = data.shuffle().map(
         lambda data_point: tokenizer(
@@ -178,7 +176,7 @@ def train_model(args):
         metrics = trainer.evaluate(eval_dataset=data['test'])
         print(metrics)
         #save model
-        model.push_to_hub(HUB_MODEL)
+        model.push_to_hub(args.mhub)
         model.save_pretrained(f'{OUTFOLDER}/best_model')
 
     else:
@@ -218,7 +216,11 @@ def get_parser(raw_args=None):
     parser.add_argument('--reload', action="store_true",
                         help='to reload checkpoint')
     parser.add_argument('--mode', type=str, default='eval',
-                        help='train or eval')
+                        help='train or eval')    
+    parser.add_argument('-d', '--dhub', type=str,
+                        default='achang/stock_forecast_0', help='get from hub folder name for task dataset')
+    parser.add_argument('-m', '--mhub', type=str,
+                        default='', help='push to hub folder model')
     args = parser.parse_args(raw_args)
     return args
 
