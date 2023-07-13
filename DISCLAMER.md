@@ -8,6 +8,8 @@ The software is not a recommendation to buy or sell any security or financial in
 The software does not take into account your individual investment objectives, financial situation, or needs.
 The software is not a substitute for professional financial advice.
 You are solely responsible for the risks associated with your investment decisions.
-Limitation of Liability
+
+
+### Limitation of Liability
 
 In no event shall this software or any of his maintaners be liable for any direct, indirect, incidental, special, punitive, or consequential damages arising out of the use of this software.
