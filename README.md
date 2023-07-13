@@ -60,3 +60,7 @@ Then run this to train a model
 python fin_train.py
 ```
 
+
+# License
+
+Atradebot is open-source software released under the [Apache 2.0 license](https://github.com/Superalgos/Superalgos/blob/master/LICENSE)
