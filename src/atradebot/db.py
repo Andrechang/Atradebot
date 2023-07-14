@@ -39,10 +39,17 @@ def create_db():
                         db.Column('sentiment', db.Float(), nullable=False),
                         db.Column('embedding', db.String(255), nullable=False),
                     )
+    
+    sentiments = db.Table('sentiments', metadata,
+                        db.Column('id', db.Integer(), primary_key=True),
+                        db.Column('symbol', db.String(255), nullable=False),
+                        db.Column('date', db.String(255), nullable=False),
+                        db.Column('sentiment', db.Float(), nullable=False),
+                    )
 
     # create tables in database:
     metadata.create_all(engine)
-    return engine, connection, stocks, dates, news
+    return engine, connection, stocks, dates, news, sentiments
 
 
 if __name__ == "__main__":
