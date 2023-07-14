@@ -74,6 +74,24 @@ python fin_train.py
 ```
 
 
+## Sentiment analysis and database
+
+To setup a server to scrape news.
+
+TODO:
+
+- modify script to take in a list of stocks
+- main function to run as program
+- cron job info
+
+
+Run with:
+
+```
+python news2db.py
+```
+
+
 # License
 
 Atradebot is open-source software released under the [Apache 2.0 license](https://github.com/Superalgos/Superalgos/blob/master/LICENSE)
