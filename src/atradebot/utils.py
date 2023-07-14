@@ -51,22 +51,6 @@ def get_config(cfg_file):
 
 
 # run financial sentiment analysis model
-def get_sentiment(sentences, model, max_length=512):
-    # truncate sentences that are too long
-    for i, s in enumerate(sentences):
-        if len(s) > max_length:
-            sentences[i] = sentences[i][:max_length]
-
-    sentiment = model(sentences)
-    sum, neutrals = 0, 0
-    if len(sentiment) > 0:
-        for r in sentiment: 
-            sum += (r["label"] == "Positive")
-            neutrals += (r["label"] == "Neutral")
-
-        den = len(sentiment)-neutrals
-        sentiment = sum/den if den > 0 else 1.0 # as all neutral
-    return sentiment
 
 
 def get_forecast(stock, date):
