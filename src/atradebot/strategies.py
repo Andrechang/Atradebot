@@ -10,8 +10,8 @@ from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
 from pypfopt.efficient_frontier import EfficientFrontier
 import re
 from atradebot.utils import business_days
-from atradebot.news_util import get_google_news, get_finhub_news
-from atradebot.fin_train import get_model, generate_prompt
+from atradebot.news_utils import get_google_news, get_finhub_news
+from atradebot.fin_trains import get_model, generate_prompt
 import torch
 import numpy as np
 from atradebot.fin_train import get_response

@@ -11,7 +11,7 @@ from dateutil.relativedelta import relativedelta
 import shutil
 from atradebot.utils import is_business_day, business_days
 from atradebot.utils import get_config, get_price, pd_append
-from atradebot.utils import get_sentiment, get_forecast
+from atradebot.utils import get_forecast
 from atradebot import news_util
 
 def get_arg(raw_args=None):
@@ -101,14 +101,6 @@ class TradingBot:
     #     except:
     #         print("Error in authentication")
     
-
-    # get NLP model to analyze sentiment
-    # def init_model(self):
-    #     finbert = BertForSequenceClassification.from_pretrained('yiyanghkust/finbert-tone', num_labels=3)
-    #     tokenizer = BertTokenizer.from_pretrained('yiyanghkust/finbert-tone')
-    #     self.sentiment_analyzer = pipeline("sentiment-analysis", model=finbert, tokenizer=tokenizer)
-    
-
     # get the news from: google, TODO yfinance, twitter, 
     def get_news(self):
         print("Getting news:")
@@ -147,11 +139,6 @@ class TradingBot:
         # self.get_stats()
         # TODO: +historical data analysis
         # TODO: AutoGPT? FinNLP analysis
-        # text = self.news['text']
-        # print(text)
-        # sentences = tokenize.sent_tokenize(self.news['text'])
-        # sentences = tokenizer(text, return_tensors="pt")
-        # self.news['embeddings'] = sentences.apply(get_sentiment, args=(self.sentiment_analyzer,))
 
         # simple mean of sentiment score ranking
         mean_score = []

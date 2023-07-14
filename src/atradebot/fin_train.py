@@ -22,7 +22,7 @@ from sklearn.metrics import mean_squared_error
 import re
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
-from atradebot import main, news_util
+from atradebot import main, news_utils
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 

@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 import pandas as pd
 import yfinance as yf
 import numpy as np
-from atradebot import main, news_util
+from atradebot import main, news_utils
 from datasets import Dataset
 import time
 import json
