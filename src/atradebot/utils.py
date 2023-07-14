@@ -1,22 +1,16 @@
 # util and helper functions for atradebot
 
 import pandas as pd
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 import yaml
-import requests
 import yfinance as yf
-from bs4 import BeautifulSoup
-import trafilatura
-from trafilatura.settings import use_config
-
-trafilatura_config = use_config()
-trafilatura_config.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
 
 DATE_FORMAT = "%Y-%m-%d"
 
 
 def is_business_day(date):
     return bool(len(pd.bdate_range(date, date)))
+
 
 #add/subtract business days
 def business_days(start_date, num_days):
@@ -35,6 +29,7 @@ def business_days(start_date, num_days):
 def pd_append(df, dict_d):
     return pd.concat([df, pd.DataFrame.from_records([dict_d])])
 
+
 def get_price(stock):
     ticker = yf.Ticker(stock).info
     return ticker['regularMarketOpen']
@@ -51,8 +46,6 @@ def get_config(cfg_file):
 
 
 # run financial sentiment analysis model
-
-
 def get_forecast(stock, date):
     """get forecast for stock on date
     Args:
@@ -77,5 +70,3 @@ def get_forecast(stock, date):
         forecast[idx] = hdata['Close'].mean()/price
     
     return forecast
-
-

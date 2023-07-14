@@ -3,7 +3,7 @@
 # function output: list of dict {"link", "title", "snippet", "date", "source", "text", "stock"}
 
 import pandas as pd
-import tweepy
+# import tweepy
 from argparse import ArgumentParser
 import os
 from datetime import date, datetime, timedelta
