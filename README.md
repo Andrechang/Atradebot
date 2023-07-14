@@ -6,9 +6,21 @@ Bot to help you choose what to invest using AI
 
 ### Install
 
+Requirement:
+
+```
+pip install -r requirements.txt
+```
+
 Install using pip
 ```
 pip install -e .
+
+if errors do:
+```
+pip install --upgrade pip
+```
+
 
 ## Run 
 Go to folder `src/atradebot`
