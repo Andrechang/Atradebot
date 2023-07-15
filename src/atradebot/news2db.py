@@ -9,6 +9,7 @@ from db import create_db
 from sentiment_utils import get_sentiment, sentiment_analyzer
 from utils import DATE_FORMAT
 from news_utils import get_google_news
+from stocks_lists import stocks_list_all
 
 
 def get_news_sentiments_store_db(stocks_list, from_date, to_date, num_results=10, verbose=False):
@@ -80,11 +81,12 @@ def get_news_sentiments_store_db(stocks_list, from_date, to_date, num_results=10
 		ResultSet = ResultProxy.fetchall()
 		print(ResultSet)
 
-
+# script to run CRON job - get news for all stocks in our list
 if __name__ == "__main__":
-	# get some news for stock list:
-	stocks_list = ['AAPL']
+	# stocks_list = ['AAPL']
+	stocks_list = stocks_list_all # get our list of stocks
 	date_today = datetime.date.today().strftime(DATE_FORMAT)
+	# run sentimet over last 7days (1 week), max 10 articles per symbol
 	get_news_sentiments_store_db(stocks_list, 
 				  from_date=(datetime.datetime.now() - datetime.timedelta(days=7)).strftime(DATE_FORMAT), 
 				  to_date=date_today,
