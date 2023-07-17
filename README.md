@@ -91,6 +91,23 @@ Run with:
 python news2db.py
 ```
 
+To set up a cron job on a Unix server you can follow [these instructions](https://www.geeksforgeeks.org/how-to-setup-cron-jobs-in-ubuntu/). 
+
+Add cron job with: 
+
+`
+crontab -e
+`
+
+Add line:
+`
+0 4 * * * cd /home/your_dir/Atradebot/src/atradebot/ && python news2db.py
+`
+
+This will run the script on your server every day at 4 am. It will collect data every day and store it in the database.
+
+
+
 
 # License
 
