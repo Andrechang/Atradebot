@@ -12,7 +12,7 @@ import shutil
 from atradebot.utils import is_business_day, business_days
 from atradebot.utils import get_config, get_price, pd_append
 from atradebot.utils import get_forecast
-from atradebot import news_util
+from atradebot import news_utils
 
 def get_arg(raw_args=None):
     parser = ArgumentParser(description="parameters")
@@ -112,7 +112,7 @@ class TradingBot:
             #reddit
             #blind
             # get google text news
-            gnews, _, _ = news_util.get_google_news(stock)
+            gnews, _, _ = news_utils.get_google_news(stock)
             
             df = pd.DataFrame(gnews)
             self.news = pd.concat([self.news, df],ignore_index=True)

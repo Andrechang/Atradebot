@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 import pandas as pd
 import yfinance as yf
 import numpy as np
-from atradebot import main, news_utils
+from atradebot import main, news_utils, utils
 from datasets import Dataset
 import time
 import json
@@ -13,8 +13,13 @@ from datasets import load_dataset, Dataset
 from tqdm import tqdm
 
 
-# find peaks and valleys
 def find_peaks_valleys(array):
+    """find peaks and valleys
+    Args:
+        array (list of numbers): list of numbers
+    Returns:
+        list of ids: reduced list of peaks and valleys
+    """    
     peaks = []
     valleys = []
     off = 5
@@ -26,8 +31,16 @@ def find_peaks_valleys(array):
     return peaks, valleys
 
 
-# ignore peaks and valleys that are too close to each other
 def filter_points(data, peak_idx, valley_idx):
+    """ignore peaks and valleys that are too close to each other
+    Args:
+        data (pandas): from yfinance.download
+        peak_idx (list of ids): list of ids for peaks
+        valley_idx (list of ids): list of ids for valleys
+
+    Returns:
+        list of ids: reduced list of peaks and valleys
+    """    
     len_min = min(len(peak_idx), len(valley_idx))
     idx = 0
     coef_var = np.std(data)/np.mean(data)
@@ -121,9 +134,9 @@ def gen_news_dataset(stocks, start_date, end_date, num_news=5, sample_mode = 'sp
             end = end.strftime(main.DATE_FORMAT)
             try:
                 if news_source == 'google':
-                    news, _, _ = news_util.get_google_news(stock=stock, num_results=num_news, time_period=[start, end])
+                    news, _, _ = news_utils.get_google_news(stock=stock, num_results=num_news, time_period=[start, end])
                 else:
-                    news, _, _ = news_util.get_finhub_news(stock=stock, num_results=num_news, time_period=[start, end])
+                    news, _, _ = news_utils.get_finhub_news(stock=stock, num_results=num_news, time_period=[start, end])
 
                 if news == []:
                     print(f"Can't collect news for {stock} dates {start} to {end}")
@@ -137,7 +150,7 @@ def gen_news_dataset(stocks, start_date, end_date, num_news=5, sample_mode = 'sp
         # to_save.append(stock)
         # if to_hub and len(to_save) > 5:
         #     dataset = Dataset.from_list(all_news)
-        #     dataset.push_to_hub(f"achang/{HF_news}_{to_save[0]}_{to_save[-1]}")
+        #     dataset.push_to_hub(f"atradebot/{HF_news}_{to_save[0]}_{to_save[-1]}")
         #     to_save = []
         #     time.sleep(30)
         # with open("saved_stocks.json", "w") as file:
@@ -147,8 +160,22 @@ def gen_news_dataset(stocks, start_date, end_date, num_news=5, sample_mode = 'sp
     return dataset
 
 
-def generate_forecast_task(data, to_hub=False): 
-    #json dataset for lit-llama
+def generate_forecast_task(data): 
+    """
+    generate dataset task to train a instruction to forecast model
+    also saves json dataset for lit-llama alpaca format
+
+    input: 
+            ## Instruction: what is the forecast for ... 
+            ## Input: date, news title, news snippet
+    output:
+            ## Response: forecast percentage change for 1mon, 5mon, 1 yr
+    Args:
+        data (huggingface dataset): dataset in hugginface format for raw news data
+
+    Returns:
+        huggingface dataset: dataset in hugginface format for forecast task
+    """    
     file_data = []
     for sample in data:
         forecast = main.get_forecast(sample['stock'], sample['date'])
@@ -161,24 +188,53 @@ def generate_forecast_task(data, to_hub=False):
     return dataset
 
 
-def generate_allocation_task(data, to_hub=False): 
+def generate_allocation_task(data): 
+    """
+    generate dataset task to train a instruction to forecast model
+    also saves json dataset for lit-llama alpaca format
 
-    # collect news for similar dates on some stocks
+    input: 
+            ## Instruction: What is the allocation suggestion given the news for ... 
+            ## Input: date, news snippet
+    output:
+            ## Response: allocation suggestion in percentage
 
+    Args:
+        data (huggingface dataset): dataset in hugginface format for raw news data
 
+    Returns:
+        huggingface dataset: dataset in hugginface format for allocation task
+    """    
+    news_date = []
+    stocks = []
+    prev_date = data['train'][0]['date']
     file_data = []
-    for sample in data:
-        forecast = main.get_forecast(sample['stock'], sample['date'])
+    for sample in data['train']:
+        if sample['date'].date() == prev_date.date():
+            news_date.append(sample)
+            stocks.append(sample['stock'])
+        else:
+            # choose collection of stocks news
+            for i in range(0, len(stocks), 5):
+                stocks_pick = stocks[i:i+5]
+                news_pick = news_date[i:i+5]
+                #get forecast and apply simple buy/sell strategy
+                rnd_alloc = utils.gen_rand_alloc(len(stocks_pick))
+                r_alloc = {}
+                for st, rr in zip(stocks_pick, rnd_alloc):
+                    r_alloc[st] = int(rr)
+                txt = ''
+                for s, n in zip(stocks_pick, news_pick):
+                    txt += utils.get_mentionedtext(s, n['text'])
 
-        #collect news for similar dates on some stocks
-
-        #get forecast and apply simple buy/sell strategy
-
-        #generate output based on allocation
-
-        file_data.append({'instruction': f"what is the forecast for {sample['stock']}", 
-                        'input':f"{sample['date']} {sample['title']} {sample['snippet']}", 
-                        'output':f"{round(forecast[0], 2)}, {round(forecast[1],2)}, {round(forecast[2],2)}"})   
+                #generate output based on allocation
+                file_data.append({
+                    'instruction': f"What is the allocation suggestion given the news for {stocks_pick}", 
+                    'input':f"{sample['date']} {txt}", 
+                    'output':f"{r_alloc}"})
+            prev_date = sample['date']
+            news_date = []
+            stocks = []
 
     dataset = Dataset.from_pandas(pd.DataFrame(data=file_data))
     with open("stock_alloc.json", "w") as outfile:
@@ -202,7 +258,7 @@ def get_arg(raw_args=None):
     parser.add_argument('-t', '--thub', type=str,
                         default='', help='push to hub folder name for task dataset')
     parser.add_argument('-r', '--rhub', type=str,
-                        default='achang/stocks_grouped', help='push to hub folder name for raw news data')
+                        default='atradebot/stocks_grouped', help='push to hub folder name for raw news data')
     parser.add_argument('--start_date', type=str, default="2022-08-31", help='start date for trading analysis')
     parser.add_argument('--end_date', type=str, default="2023-06-20", help='end data for trading analysis')
     parser.add_argument('--stocks', type=str, default="AAPL AMZN MSFT NVDA TSLA", help='stocks to analize')
@@ -216,7 +272,7 @@ if __name__ == "__main__":
     if args.stocks == 'sp500':
         sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
         stocks = sp500.Symbol.to_list()
-    
+
     dataset = gen_news_dataset(stocks, args.start_date, args.end_date, 
                                 sample_mode='sp500', news_source='finhub', num_news=20)
     if args.rhub != '':
