@@ -11,7 +11,7 @@ from pypfopt.efficient_frontier import EfficientFrontier
 import re
 from atradebot.utils import business_days
 from atradebot.news_utils import get_google_news, get_finhub_news
-from atradebot.fin_trains import get_model, generate_prompt
+from atradebot.fin_train import get_model, generate_prompt
 import torch
 import numpy as np
 from atradebot.fin_train import get_response
@@ -74,10 +74,10 @@ class SimpleStrategy:
 
 
 class FinForecastStrategy:
-    def __init__(self, start_date, end_date, data, stocks, cash=10000, model_id="achang/fin_forecast"):
+    def __init__(self, start_date, end_date, data, stocks, cash=10000, model_id="atradebot/fin_forecast_0"):
         """
         model:
-        data: achang/stock_forecast
+        data: atradebot/stock_forecast_0
         input: 
             Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
                 ## Instruction: what is the forecast for ... 

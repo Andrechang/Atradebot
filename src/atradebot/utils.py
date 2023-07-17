@@ -4,6 +4,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 import yaml
 import yfinance as yf
+import re
+import random
 
 DATE_FORMAT = "%Y-%m-%d"
 
@@ -70,3 +72,28 @@ def get_forecast(stock, date):
         forecast[idx] = hdata['Close'].mean()/price
     
     return forecast
+
+
+def get_mentionedtext(keyword, text, context_length=512):
+    # Define the number of characters to extract before and after the keyword
+    delimiter = '.'
+    # Create a regex pattern to match the keyword with surrounding text
+    # pattern = r"(.{0,%d})(%s)(.{0,%d})" % (context_length, re.escape(keyword), context_length)
+    pattern = r"([^%s]+%s[^%s]+)%s" % (delimiter, re.escape(keyword), delimiter, delimiter)
+
+    # Find all matches in the text
+    matches = re.findall(pattern, text)
+    f_text = ''
+    for match in matches:
+        match = match.replace("\n", "")
+        f_text += match
+        if len(f_text) > context_length:
+            break
+    return f_text
+
+def gen_rand_alloc(n_stock=5):
+# Generate random percentages that sum up to 100
+    percentages = [random.randint(1, 100) for _ in range(n_stock - 1)]
+    remaining_percentage = 100 - sum(percentages)
+    percentages.append(remaining_percentage)
+    return percentages

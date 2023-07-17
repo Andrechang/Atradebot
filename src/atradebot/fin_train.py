@@ -1,4 +1,4 @@
-# train a neuranl net model on Yahoo Finance data API, Google News
+# train a neural net model on Yahoo Finance data API, Google News
 # from: https://huggingface.co/dfurman/falcon-40b-chat-oasst1/blob/main/finetune_falcon40b_oasst1_with_bnb_peft.ipynb
 # https://huggingface.co/blog/falcon
 # https://colab.research.google.com/drive/1n5U13L0Bzhs32QO_bls5jwuZR62GPSwE?usp=sharing
@@ -218,7 +218,7 @@ def get_parser(raw_args=None):
     parser.add_argument('--mode', type=str, default='eval',
                         help='train or eval')    
     parser.add_argument('-d', '--dhub', type=str,
-                        default='achang/stock_forecast_0', help='get from hub folder name for task dataset')
+                        default='atradebot/stock_forecast_0', help='get from hub folder name for task dataset')
     parser.add_argument('-m', '--mhub', type=str,
                         default='', help='push to hub folder model')
     args = parser.parse_args(raw_args)
