@@ -6,10 +6,11 @@ import pandas as pd
 from argparse import ArgumentParser
 import os
 import math
+import yfinance as yf
 from datetime import date, datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import shutil
-import yfinance as yf
+
 from atradebot.utils import is_business_day, business_days
 from atradebot.utils import get_config, get_price, pd_append
 from atradebot.utils import get_forecast
