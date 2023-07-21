@@ -1,6 +1,8 @@
 # sentiment analysis utils
 # from https://github.com/culurciello/scratchy/
 
+# note: need to separately download punkt
+
 from nltk import tokenize
 from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import pipeline

@@ -53,7 +53,7 @@ def create_db():
 
 
 if __name__ == "__main__":
-    engine, connection, stocks, dates, news = create_db()
+    engine, connection, stocks, dates, news, sentiments = create_db()
 
     # insert data into tables:
     query = db.insert(stocks)
