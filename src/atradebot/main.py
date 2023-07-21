@@ -6,6 +6,7 @@ import pandas as pd
 from argparse import ArgumentParser
 import os
 import math
+import yfinance as yf
 from datetime import date, datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import shutil
