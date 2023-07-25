@@ -5,22 +5,28 @@
 # each stock and each date can have multiple news
 
 import os
-import sqlalchemy as db
 
+import requests
+import sqlalchemy as db
+import yfinance as yf
+import pandas as pd
 
 def create_db():
     # create database:
-    engine = db.create_engine('sqlite:///atradebot.db', echo=True)
+    engine = db.create_engine('sqlite:///atradebot1.db', echo=True)
     connection = engine.connect()
     metadata = db.MetaData()
 
     # create tables:
     stocks = db.Table('stocks', metadata,
                         db.Column('id', db.Integer(), primary_key=True),
-                        db.Column('symbol', db.String(255), nullable=False),
-                        db.Column('name', db.String(255), nullable=False),
-                        db.Column('sector', db.String(255), nullable=False),
-                        db.Column('industry', db.String(255), nullable=False),
+                        db.Column('symbol', db.String(255), nullable=True),
+                        db.Column('name', db.String(255), nullable=True),
+                        db.Column('sector', db.String(255), nullable=True),
+                        db.Column('industry', db.String(255), nullable=True),
+                        db.Column('live_price', db.Float(), nullable=True),
+                        db.Column('prev_close', db.Float(), nullable=True),
+                        db.Column('open', db.Float(), nullable=True),
                     )
 
     dates = db.Table('dates', metadata,
@@ -55,17 +61,61 @@ def create_db():
 if __name__ == "__main__":
     engine, connection, stocks, dates, news, sentiments = create_db()
 
-    # insert data into tables:
-    query = db.insert(stocks)
-    values_list = [{'symbol':'AAPL', 'name':'Apple Inc.', 'sector':'Technology', 'industry':'Consumer Electronics'},
-                    {'symbol':'MSFT', 'name':'Microsoft Corporation', 'sector':'Technology', 'industry':'Software—Infrastructure'},
-                    {'symbol':'AMZN', 'name':'Amazon.com, Inc.', 'sector':'Consumer Cyclical', 'industry':'Internet Retail'},
-                    {'symbol':'GOOG', 'name':'Alphabet Inc.', 'sector':'Technology', 'industry':'Internet Content & Information'},
-                    {'symbol':'FB', 'name':'Facebook, Inc.', 'sector':'Communication Services', 'industry':'Internet Content & Information'},
-                    {'symbol':'TSLA', 'name':'Tesla, Inc.', 'sector':'Consumer Cyclical', 'industry':'Auto Manufacturers'},
-                    {'symbol':'NVDA', 'name':'NVIDIA Corporation', 'sector':'Technology', 'industry':'Semiconductors'},
-                ]
-    ResultProxy = connection.execute(query,values_list)
+    # get list of stocks:
+    stock_df = pd.read_excel('S&P 500 Companies.xlsx')
+    symbols = stock_df['Symbol'].tolist()
+
+    # get data for symbols:
+    for i in symbols:
+        try:
+            ticker = yf.Ticker(i)
+
+            # get stock info
+            info = ticker.info
+
+            name = info.get('shortName', 'NA')
+            sector = info.get('sector', 'NA')
+            industry = info.get('industry', 'NA')
+            live_price = info.get('regularMarketPrice', 0.0)
+            prev_close = info.get('previousClose', 0.0)
+            open_price = info.get('open', 0.0)
+
+            if live_price is None:
+                live_price = 0.0
+            if industry is None:
+                industry = ""
+            if sector is None:
+                sector = ""
+            if name is None:
+                name = ""
+            if prev_close is None:
+                prev_close = 0.0
+            if open_price is None:
+                open_price = 0.0
+
+
+            # insert stock data into tables:
+            query = db.insert(stocks)
+            values_list = [{'symbol':i, 'name':name, 'sector':sector, 'industry':industry, 'live_price':live_price, 'prev_close':prev_close, 'open':open_price}]
+
+            ResultProxy = connection.execute(query,values_list)
+
+        # Error handling
+        except requests.exceptions.HTTPError as error_terminal:
+            continue
+
+
+    # # insert data into tables:
+    # query = db.insert(stocks)
+    # values_list = [{'symbol':'AAPL', 'name':'Apple Inc.', 'sector':'Technology', 'industry':'Consumer Electronics'},
+    #                 {'symbol':'MSFT', 'name':'Microsoft Corporation', 'sector':'Technology', 'industry':'Software—Infrastructure'},
+    #                 {'symbol':'AMZN', 'name':'Amazon.com, Inc.', 'sector':'Consumer Cyclical', 'industry':'Internet Retail'},
+    #                 {'symbol':'GOOG', 'name':'Alphabet Inc.', 'sector':'Technology', 'industry':'Internet Content & Information'},
+    #                 {'symbol':'FB', 'name':'Facebook, Inc.', 'sector':'Communication Services', 'industry':'Internet Content & Information'},
+    #                 {'symbol':'TSLA', 'name':'Tesla, Inc.', 'sector':'Consumer Cyclical', 'industry':'Auto Manufacturers'},
+    #                 {'symbol':'NVDA', 'name':'NVIDIA Corporation', 'sector':'Technology', 'industry':'Semiconductors'},
+    #             ]
+    # ResultProxy = connection.execute(query,values_list)
 
     # insert news
     query = db.insert(news)
@@ -77,10 +127,16 @@ if __name__ == "__main__":
     query = stocks.select()
     ResultProxy = connection.execute(query)
     ResultSet = ResultProxy.fetchall()
-    print(ResultSet)
 
     # query data:
     query = news.select()
     ResultProxy = connection.execute(query)
     ResultSet = ResultProxy.fetchall()
-    print(ResultSet)
+
+    # check query data:
+    res = connection.execute(db.select(stocks))
+
+    rows = res.fetchmany(10)
+
+    for r in rows:
+        print(r)
