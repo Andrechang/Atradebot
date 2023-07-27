@@ -1,0 +1,19 @@
+.container{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 35px;
+    text-align: center;
+}
+.input{
+    margin: 2px;
+}
+.signupformbtn{
+   align-items: center;
+   text-align: center;
+   margin-top: 5px;
+}
+.or{
+    text-align: center;
+}

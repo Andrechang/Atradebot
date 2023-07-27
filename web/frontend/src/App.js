@@ -1,53 +1,31 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import "./App.css";
+import Navbar from './components/Navbar';
+import Home from './components/Home';
+import Signup from './components/Signup';
+
+
+
+import {
+  BrowserRouter,
+  Route,
+  Routes
+} from "react-router-dom";
 
 function App() {
+  return (
+    <div className="App">
+      <BrowserRouter>
+        <Navbar />
+        <Routes>
+          {/* Define your routes inside the <Routes> component */}
+          <Route path="/" element={<Home />} />
+          <Route path="/signup" element={<Signup/>} />
 
-	const [data, setdata] = useState({
-		name: "",
-		age: 0,
-		programming: "",
-	});
-
-
-	useEffect(() => {
-
-		fetch("/home").then((res) =>
-			res.json().then((data) => {
-				setdata({
-					name: data.Name,
-					age: data.Age,
-					date: data.Date,
-					programming: data.programming,
-				});
-			})
-		);
-
-		fetch("/signup").then((res) =>
-			res.json().then((data) => {
-				setdata({
-					name: data.Name,
-					age: data.Age,
-					date: data.Date,
-					programming: data.programming,
-				});
-			})
-		);
-
-	}, []);
-
-	return (
-		<div className="App">
-			<header className="App-header">
-				<h1>React and flask</h1>
-				{/* Calling a data from setdata for showing */}
-				<p>{data.name}</p>
-				<p>{data.age}</p>
-				<p>{data.programming}</p>
-
-			</header>
-		</div>
-	);
+        </Routes>
+      </BrowserRouter>
+    </div>
+  );
 }
 
 export default App;
