@@ -34,11 +34,11 @@ export default function Navbar() {
         </li>
         
       </ul>
-      <form className="d-flex" role="search">
-        <input className="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
-        <button className="btn btn-outline-success" type="submit">Search</button>
-        <Link to="/signup" className="btn btn-outline-success signup">
-              Sign Up
+      <form className="form" role="search">
+        <input className="form-control" type="search" placeholder="Search" aria-label="Search"/>
+        <button className="btn btn-outline-success navbtn" type="submit">Search</button>
+        <Link to="/signup" className="btn btn-outline-success navbtn">
+              Signup
             </Link>
 
       </form>

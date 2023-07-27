@@ -1,12 +1,12 @@
-.btn{
+.form{
+    display: flex;
+    /* width: 40%; */
+}
+.navbtn{
+    /* width: 30%; */
     margin: 2px;
-    width: 100px
 }
-.signup{
-    text-decoration: none;
-    color: antiquewhite;
-}
-.d-flex{
-    flex-direction: row;
-    
+.form-control{
+    /* width: 100%; */
+    margin-right: 8px;
 }

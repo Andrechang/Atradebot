@@ -1,5 +1,7 @@
 import React from 'react';
 import GoogleSignUp from './GoogleSignUp';
+import SignupForm from './SignupForm';
+
 
 const App = () => {
   const handleGoogleSignInSuccess = (userData) => {
@@ -13,12 +15,14 @@ const App = () => {
   };
 
   return (
-    <div>
-      <h1>Sign Up with Google</h1>
+    <div className='container'>
+        <SignupForm/>
+      <h3>Sign Up with Google</h3>
       <GoogleSignUp
         onGoogleSignInSuccess={handleGoogleSignInSuccess}
         onGoogleSignInFailure={handleGoogleSignInFailure}
       />
+    
     </div>
   );
 };
