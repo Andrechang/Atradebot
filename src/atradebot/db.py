@@ -10,10 +10,12 @@ import requests
 import sqlalchemy as db
 import yfinance as yf
 import pandas as pd
+from sqlalchemy import text
+
 
 def create_db():
     # create database:
-    engine = db.create_engine('sqlite:///atradebot1.db', echo=True)
+    engine = db.create_engine('sqlite:///atradebot.db', echo=True)
     connection = engine.connect()
     metadata = db.MetaData()
 
@@ -45,7 +47,7 @@ def create_db():
                         db.Column('sentiment', db.Float(), nullable=False),
                         db.Column('embedding', db.String(255), nullable=False),
                     )
-    
+
     sentiments = db.Table('sentiments', metadata,
                         db.Column('id', db.Integer(), primary_key=True),
                         db.Column('symbol', db.String(255), nullable=False),
@@ -54,12 +56,18 @@ def create_db():
                     )
 
     # create tables in database:
+    print("creating tables")
     metadata.create_all(engine)
+    print("tables created")
     return engine, connection, stocks, dates, news, sentiments
 
 
 if __name__ == "__main__":
+    print("creating database")
     engine, connection, stocks, dates, news, sentiments = create_db()
+    print("database created")
+
+    connection.execute(text("PRAGMA journal_mode=DELETE"))
 
     # get list of stocks:
     stock_df = pd.read_excel('S&P 500 Companies.xlsx')
@@ -97,25 +105,25 @@ if __name__ == "__main__":
             # insert stock data into tables:
             query = db.insert(stocks)
             values_list = [{'symbol':i, 'name':name, 'sector':sector, 'industry':industry, 'live_price':live_price, 'prev_close':prev_close, 'open':open_price}]
-
+            print("inserting stock data for: ", i)
             ResultProxy = connection.execute(query,values_list)
+            print("inserted stock data for: ", i)
 
         # Error handling
         except requests.exceptions.HTTPError as error_terminal:
+            print(f"HTTPError occurred while getting data for {i}: {error_terminal}")
+            continue
+        except Exception as e:  # General exception catch
+            print(f"Unexpected error occurred while getting data for {i}: {e}")
             continue
 
+    ResultProxy = connection.execute(db.select(stocks))
+    ResultSet = ResultProxy.fetchall()
 
-    # # insert data into tables:
-    # query = db.insert(stocks)
-    # values_list = [{'symbol':'AAPL', 'name':'Apple Inc.', 'sector':'Technology', 'industry':'Consumer Electronics'},
-    #                 {'symbol':'MSFT', 'name':'Microsoft Corporation', 'sector':'Technology', 'industry':'Software—Infrastructure'},
-    #                 {'symbol':'AMZN', 'name':'Amazon.com, Inc.', 'sector':'Consumer Cyclical', 'industry':'Internet Retail'},
-    #                 {'symbol':'GOOG', 'name':'Alphabet Inc.', 'sector':'Technology', 'industry':'Internet Content & Information'},
-    #                 {'symbol':'FB', 'name':'Facebook, Inc.', 'sector':'Communication Services', 'industry':'Internet Content & Information'},
-    #                 {'symbol':'TSLA', 'name':'Tesla, Inc.', 'sector':'Consumer Cyclical', 'industry':'Auto Manufacturers'},
-    #                 {'symbol':'NVDA', 'name':'NVIDIA Corporation', 'sector':'Technology', 'industry':'Semiconductors'},
-    #             ]
-    # ResultProxy = connection.execute(query,values_list)
+    # print the first 5 rows:
+    for row in ResultSet[:5]:
+        print("This is Row")
+        print(row)
 
     # insert news
     query = db.insert(news)
@@ -127,6 +135,7 @@ if __name__ == "__main__":
     query = stocks.select()
     ResultProxy = connection.execute(query)
     ResultSet = ResultProxy.fetchall()
+    print("stocks quered")
 
     # query data:
     query = news.select()
@@ -140,3 +149,8 @@ if __name__ == "__main__":
 
     for r in rows:
         print(r)
+
+    connection.execute(text("PRAGMA journal_mode=WAL"))
+
+    # Close the connection
+    connection.close()
