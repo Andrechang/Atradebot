@@ -38,7 +38,7 @@ export default function Navbar() {
         <input className="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
         <button className="btn btn-outline-success" type="submit">Search</button>
         <button className="btn btn-outline-success" type="submit">
-            <Link to='signup' className='signup'></Link>
+            <Link to='/signup' className='signup'></Link>
         Sign Up</button>
 
       </form>
