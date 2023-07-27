@@ -1,4 +1,4 @@
-"""Returns all blogs"""
+"""All imports"""
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
@@ -21,6 +21,17 @@ def home():
         "programming": "Learn2Grow"
     }
 
+
+@app.route("/signup", methods=['GET', 'POST'])
+def signup():
+    """Test Page"""
+    # todo_data = request.get_json()
+    # print(todo_data)
+    return {
+        'Name': "Granth Bagadia",
+        "Age": "18",
+        "programming": "Learn2Grow"
+    }
 
 if __name__ == '__main__':
     app.run(debug=True)

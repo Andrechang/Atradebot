@@ -11,6 +11,7 @@ function App() {
 
 
 	useEffect(() => {
+
 		fetch("/home").then((res) =>
 			res.json().then((data) => {
 				setdata({
@@ -21,6 +22,18 @@ function App() {
 				});
 			})
 		);
+
+		fetch("/signup").then((res) =>
+			res.json().then((data) => {
+				setdata({
+					name: data.Name,
+					age: data.Age,
+					date: data.Date,
+					programming: data.programming,
+				});
+			})
+		);
+
 	}, []);
 
 	return (
