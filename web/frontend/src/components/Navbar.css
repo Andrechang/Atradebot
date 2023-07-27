@@ -1,0 +1,12 @@
+.btn{
+    margin: 2px;
+    width: 100px
+}
+.signup{
+    text-decoration: none;
+    color: antiquewhite;
+}
+.d-flex{
+    flex-direction: row;
+    
+}

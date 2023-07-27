@@ -1,5 +1,13 @@
 import React  from "react";
 import "./App.css";
+import Navbar from './components/Navbar';
+import Home from './components/Home';
+import Signup from './components/Signup';
+
+import{
+	BrowserRouter,Route,Routes
+  } from "react-router-dom"
+  
 
 function App() {
 
@@ -38,6 +46,8 @@ function App() {
 
 	return (
 		<div className="App">
+			<BrowserRouter>
+			<Navbar/>
 			{/* <header className="App-header">
 				<h1>React and flask</h1>
 				Calling a data from setdata for showing
@@ -46,6 +56,12 @@ function App() {
 				<p>{data.programming}</p>
 
 			</header> */}
+			<Routes>
+				<Route exact path='/home' element={<Home/>}/>
+				<Route exact path='/signup' element={<Signup/>}/>
+
+			</Routes>
+			</BrowserRouter>
 		</div>
 	);
 }
