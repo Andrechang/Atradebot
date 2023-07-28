@@ -11,6 +11,7 @@ import sqlalchemy as db
 import yfinance as yf
 import pandas as pd
 from sqlalchemy import text
+import time
 
 
 def create_db():
@@ -56,16 +57,12 @@ def create_db():
                     )
 
     # create tables in database:
-    print("creating tables")
     metadata.create_all(engine)
-    print("tables created")
     return engine, connection, stocks, dates, news, sentiments
 
 
 if __name__ == "__main__":
-    print("creating database")
     engine, connection, stocks, dates, news, sentiments = create_db()
-    print("database created")
 
     connection.execute(text("PRAGMA journal_mode=DELETE"))
 
@@ -73,84 +70,82 @@ if __name__ == "__main__":
     stock_df = pd.read_excel('S&P 500 Companies.xlsx')
     symbols = stock_df['Symbol'].tolist()
 
-    # get data for symbols:
-    for i in symbols:
+    try:
+        # get data for symbols:
+        for i in symbols:
+            trans = connection.begin_nested()
+            try:
+                ticker = yf.Ticker(i)
+
+                # get stock info
+                info = ticker.info
+
+                name = info.get('shortName', 'NA')
+                sector = info.get('sector', 'NA')
+                industry = info.get('industry', 'NA')
+                live_price = info.get('regularMarketPrice', 0.0)
+                prev_close = info.get('previousClose', 0.0)
+                open_price = info.get('open', 0.0)
+
+                if live_price is None:
+                    live_price = 0.0
+                if industry is None:
+                    industry = ""
+                if sector is None:
+                    sector = ""
+                if name is None:
+                    name = ""
+                if prev_close is None:
+                    prev_close = 0.0
+                if open_price is None:
+                    open_price = 0.0
+
+                # insert stock data into tables:
+                query = db.insert(stocks)
+                values_list = [{'symbol':i, 'name':name, 'sector':sector, 'industry':industry, 'live_price':live_price, 'prev_close':prev_close, 'open':open_price}]
+                ResultProxy = connection.execute(query,values_list)
+
+                trans.commit()
+                time.sleep(1)
+
+            # Error handling
+            except requests.exceptions.HTTPError as error_terminal:
+                print("HTTPError")
+                trans.rollback()
+                continue
+            except Exception as e:  # General exception catch
+                print("Unexpected error")
+                trans.rollback()
+                continue
+
+        # insert news
+        trans_news = connection.begin_nested()
         try:
-            ticker = yf.Ticker(i)
-
-            # get stock info
-            info = ticker.info
-
-            name = info.get('shortName', 'NA')
-            sector = info.get('sector', 'NA')
-            industry = info.get('industry', 'NA')
-            live_price = info.get('regularMarketPrice', 0.0)
-            prev_close = info.get('previousClose', 0.0)
-            open_price = info.get('open', 0.0)
-
-            if live_price is None:
-                live_price = 0.0
-            if industry is None:
-                industry = ""
-            if sector is None:
-                sector = ""
-            if name is None:
-                name = ""
-            if prev_close is None:
-                prev_close = 0.0
-            if open_price is None:
-                open_price = 0.0
-
-
-            # insert stock data into tables:
-            query = db.insert(stocks)
-            values_list = [{'symbol':i, 'name':name, 'sector':sector, 'industry':industry, 'live_price':live_price, 'prev_close':prev_close, 'open':open_price}]
-            print("inserting stock data for: ", i)
+            query = db.insert(news)
+            values_list = [{'symbol':'AAPL', 'title':'Apple Inc. (AAPL) Stock Sinks As Market Gains: What You Should Know', 'date':'2021-07-23 21:50:09', 'url':'https://finance.yahoo.com/news/apple-inc-aapl-stock-sinks-015009416.html', 'source':'Yahoo Finance', 'text':'Apple Inc. (AAPL) closed at $148.56 in the latest trading session, marking a -0.47% move from the prior day.', 'sentiment':0.5, 'embedding':'0.1,0.2,0.3'},]
             ResultProxy = connection.execute(query,values_list)
-            print("inserted stock data for: ", i)
+            trans_news.commit()
+        except Exception as e:
+            print("Unexpected news error")
+            trans_news.rollback()
 
-        # Error handling
-        except requests.exceptions.HTTPError as error_terminal:
-            print(f"HTTPError occurred while getting data for {i}: {error_terminal}")
-            continue
-        except Exception as e:  # General exception catch
-            print(f"Unexpected error occurred while getting data for {i}: {e}")
-            continue
+    finally:
+        # query data:
+        query = stocks.select()
+        ResultProxy = connection.execute(query)
+        ResultSet = ResultProxy.fetchall()
 
-    ResultProxy = connection.execute(db.select(stocks))
-    ResultSet = ResultProxy.fetchall()
+        # check query data:
+        res = connection.execute(db.select(stocks))
 
-    # print the first 5 rows:
-    for row in ResultSet[:5]:
-        print("This is Row")
-        print(row)
+        rows = res.fetchmany(10)
 
-    # insert news
-    query = db.insert(news)
-    values_list = [{'symbol':'AAPL', 'title':'Apple Inc. (AAPL) Stock Sinks As Market Gains: What You Should Know', 'date':'2021-07-23 21:50:09', 'url':'https://finance.yahoo.com/news/apple-inc-aapl-stock-sinks-015009416.html', 'source':'Yahoo Finance', 'text':'Apple Inc. (AAPL) closed at $148.56 in the latest trading session, marking a -0.47% move from the prior day.', 'sentiment':0.5, 'embedding':'0.1,0.2,0.3'},
-                ]
-    ResultProxy = connection.execute(query,values_list)
+        for r in rows:
+            print(r)
 
-    # query data:
-    query = stocks.select()
-    ResultProxy = connection.execute(query)
-    ResultSet = ResultProxy.fetchall()
-    print("stocks quered")
+        connection.execute(text("PRAGMA journal_mode=WAL"))
 
-    # query data:
-    query = news.select()
-    ResultProxy = connection.execute(query)
-    ResultSet = ResultProxy.fetchall()
+        # Close the connection
+        connection.close()
 
-    # check query data:
-    res = connection.execute(db.select(stocks))
 
-    rows = res.fetchmany(10)
-
-    for r in rows:
-        print(r)
-
-    connection.execute(text("PRAGMA journal_mode=WAL"))
-
-    # Close the connection
-    connection.close()

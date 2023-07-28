@@ -15,29 +15,30 @@ db = create_engine(url)
 # connection:
 conn = db.connect()
 
-# SQL query:
-sql_query = text("SELECT * FROM stocks LIMIT 5;")
-
-try:
-    results = conn.execute(sql_query)
-    rows = results.fetchall()  # Fetch all rows from the result
-except Exception as e:
-    print(f"Error executing query: {e}")
-    rows = None
-
-if rows:
-    for row in rows:
-        print(row)
-else:
-    print("No results returned from query")
-
-conn.close()
+# Print first 5 rows of stocks table to check connection:
+# # SQL query:
+# sql_query = text("SELECT * FROM stocks LIMIT 5;")
+#
+# try:
+#     results = conn.execute(sql_query)
+#     rows = results.fetchall()  # Fetch all rows from the result
+# except Exception as e:
+#     print(f"Error executing query: {e}")
+#     rows = None
+#
+# if rows:
+#     for row in rows:
+#         print(row)
+# else:
+#     print("No results returned from query")
+#
+# conn.close()
 
 # loading table definitions:
 metadata_obj = MetaData()
 metadata_obj.reflect(db)
 
-print(metadata_obj.tables.keys())
+# print(metadata_obj.tables.keys())
 
 # create a database object:
 db_obj = SQLDatabase(db)
