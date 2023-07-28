@@ -81,7 +81,7 @@ const SignUpForm = () => {
         <button type="submit" className='btn btn-primary signupformbtn'>
           SignUp
         </button>
-        <p>Already have an account? <Link to='/login'>Login</Link></p>
+        <p>Already have an account? <Link to='/login'>Log in</Link></p>
         <h3 className='or'>Or?</h3>
       </form>
     </div>
