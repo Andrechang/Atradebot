@@ -23,6 +23,7 @@ const SignUpForm = () => {
     const userData = {
       username: formData.username,
       email: formData.email,
+      type: "webForm",
       password: formData.password,
     };
 

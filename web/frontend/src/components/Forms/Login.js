@@ -16,17 +16,16 @@ const LoginPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Convert the form data to a JSON object
     const userData = {
       username: formData.username,
-      password: formData.password,
+      password: formData.password
     };
 
-    // Send the JSON object to the backend
     fetch('/api/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+
       },
       body: JSON.stringify(userData),
     })
