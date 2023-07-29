@@ -4,7 +4,7 @@ import {GoogleLoginButton} from 'react-social-login-buttons';
 import {LoginSocialGoogle} from 'reactjs-social-login';
 
 const App = () => {
-  
+
   return (
 
     <div className='container'>
@@ -16,7 +16,11 @@ const App = () => {
       discoveryDocs='claims_supported'
       access_type='offline'
       onResolve={({provider,data})=>{
-        console.log(provider,data);
+        const userData = {
+          username: data['name'],
+          email: data['email'],
+          type: "google"
+        };
       }}
       onReject={(err)=>{
         console.log(err);

@@ -23,11 +23,11 @@ const SignUpForm = () => {
     const userData = {
       username: formData.username,
       email: formData.email,
+      type: "webForm",
       password: formData.password,
     };
-
     // Send the JSON object to the backend
-    fetch('/api/signup', {
+    fetch('/signup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
