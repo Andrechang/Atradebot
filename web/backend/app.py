@@ -1,14 +1,16 @@
 """All imports"""
 from flask import Flask, request
-from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, login_user, current_user, logout_user, login_required
+from pymongo.errors import DuplicateKeyError
+
+from db import save_user, get_user
 
 app = Flask(__name__)
 app.secret_key = "granthbagadiagranthbagadia"
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
-
-db = SQLAlchemy(app)
+login_manager = LoginManager()
+login_manager.login_view = 'login'
+login_manager.init_app(app)
 
 
 @app.route("/", methods=['GET', 'POST'])
@@ -16,22 +18,70 @@ db = SQLAlchemy(app)
 def home():
     """Home page"""
     return {
-        'Name': "Granth",
-        "Age": "18",
-        "programming": "Learn2Grow"
+        'success': True
     }
 
 
 @app.route("/signup", methods=['GET', 'POST'])
 def signup():
-    """Test Page"""
-    todo_data = request.get_json()
-    print(todo_data)
+    """Signup Page"""
+    if current_user.is_authenticated:
+        return {
+            'success': True
+        }
+    try:
+        user_data = request.get_json()
+        save_user(user_data)
+        return {
+            'success': True
+        }
+    except DuplicateKeyError:
+        return {
+            'success': False,
+            'message': "User already exists!"
+        }
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Login Page"""
+    if current_user.is_authenticated:
+        return {
+            'success': True
+        }
+    user_data = request.get_json()
+    if user_data['type'] == 'webForm':
+        user = get_user(user_data['username'])
+        if user and user.check_password(user_data['password']):
+            login_user(user)
+            return {
+                'success': True
+            }
+        return {
+            'success': False,
+            'message': "Wrong Password!"
+        }
     return {
-        'Name': "Granth Bagadia",
-        "Age": "18",
-        "programming": "Learn2Grow"
+        'success': False,
+        'message': "Wrong Password!"
     }
+
+
+@app.route("/logout", methods=['GET', 'POST'])
+@login_required
+def logout():
+    """Logout Page"""
+    logout_user()
+    return {'success': True}
+
+
+
+@login_manager.user_loader
+def load_user(username):
+    """Load User"""
+    return get_user(username)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

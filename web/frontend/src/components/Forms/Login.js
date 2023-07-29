@@ -18,10 +18,11 @@ const LoginPage = () => {
 
     const userData = {
       username: formData.username,
-      password: formData.password
+      password: formData.password,
+      type: "webForm"
     };
 
-    fetch('/api/login', {
+    fetch('/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,7 +33,10 @@ const LoginPage = () => {
       .then((response) => response.json())
       .then((data) => {
         // Handle the response from the backend
-        console.log(data);
+        console.log(data.success);
+        // Add Redirect to home page in the below conditional
+        // if(data.success === true){
+        // }
       })
       .catch((error) => {
         console.error('Error:', error);
