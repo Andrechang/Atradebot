@@ -4,13 +4,13 @@ import Googlesignup from './Googlesignup';
 
 
 const App = () => {
-  
+
   return (
 
     <div className='container'>
       <SignupForm/>
       <h3>Sign up with Google</h3>
-      <Googlesignup/>
+      
     </div>
   );
 };

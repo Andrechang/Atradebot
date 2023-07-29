@@ -1,5 +1,5 @@
 """All imports"""
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -25,8 +25,8 @@ def home():
 @app.route("/signup", methods=['GET', 'POST'])
 def signup():
     """Test Page"""
-    # todo_data = request.get_json()
-    # print(todo_data)
+    todo_data = request.get_json()
+    print(todo_data)
     return {
         'Name': "Granth Bagadia",
         "Age": "18",
