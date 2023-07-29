@@ -1,28 +1,32 @@
-import React from 'react';
-import GoogleSignUp from './GoogleSignUp';
+import React,{useEffect} from 'react';
 import SignupForm from './SignupForm';
+import {GoogleLoginButton} from 'react-social-login-buttons';
+import {LoginSocialGoogle} from 'reactjs-social-login';
+
+
 
 
 const App = () => {
-  const handleGoogleSignInSuccess = (userData) => {
-    // Handle successful Google Sign-In
-    console.log('User Data:', userData);
-  };
-
-  const handleGoogleSignInFailure = () => {
-    // Handle Google Sign-In failure
-    console.log('Google Sign-In failed');
-  };
-
+  
   return (
+
     <div className='container'>
-        <SignupForm/>
-      <h3>Sign Up with Google</h3>
-      <GoogleSignUp
-        onGoogleSignInSuccess={handleGoogleSignInSuccess}
-        onGoogleSignInFailure={handleGoogleSignInFailure}
-      />
-    
+      <SignupForm/>
+      <h3>Sign up with Google</h3>
+      <LoginSocialGoogle
+      client_id={'356547024443-d5ti20figat8cu1rptigsjmjktqe06fm.apps.googleusercontent.com'}
+      scope="openid profile email"
+      discoveryDocs='claims_supported'
+      access_type='offline'
+      onResolve={({provider,data})=>{
+        console.log(provider,data);
+      }}
+      onReject={(err)=>{
+        console.log(err);
+      }}
+      >
+        <GoogleLoginButton/>
+       </LoginSocialGoogle>
     </div>
   );
 };

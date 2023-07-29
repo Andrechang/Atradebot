@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import './SignupForm.css';
 import { Link } from 'react-router-dom';
 
-
 const SignUpForm = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -12,29 +11,37 @@ const SignUpForm = () => {
     confirmPassword: '',
   });
 
-//   const [passwordError, setPasswordError] = useState('');
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-
-    // Password validation
-    // if (name === 'password') {
-    //   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    //   if (!passwordRegex.test(value)) {
-    //     setPasswordError(
-    //       'Password must be at least 8 characters long and contain one capital letter and one special character.'
-    //     );
-    //   } else {
-    //     setPasswordError('');
-    //   }
-    // }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // You can perform form submission logic here, like sending data to the server.
-    console.log(formData);
+
+    // Convert the form data to a JSON object
+    const userData = {
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+    };
+
+    // Send the JSON object to the backend
+    fetch('/api/signup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        // Handle the response from the backend
+        console.log(data);
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
   };
 
   return (
@@ -76,7 +83,6 @@ const SignUpForm = () => {
             required
             className='input'
           />
-          {/* {passwordError && <p className="error">{passwordError}</p>} */}
         </div>
         <button type="submit" className='btn btn-primary signupformbtn'>
           SignUp
