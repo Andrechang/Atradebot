@@ -1,10 +1,7 @@
-import React,{useEffect} from 'react';
+import React from 'react';
 import SignupForm from './SignupForm';
 import {GoogleLoginButton} from 'react-social-login-buttons';
 import {LoginSocialGoogle} from 'reactjs-social-login';
-
-
-
 
 const App = () => {
   
