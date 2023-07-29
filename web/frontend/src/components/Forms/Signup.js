@@ -21,6 +21,14 @@ const App = () => {
           email: data['email'],
           type: "google"
         };
+        fetch('/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+        })
+        console.log(userData);
       }}
       onReject={(err)=>{
         console.log(err);
