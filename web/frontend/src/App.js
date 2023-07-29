@@ -9,6 +9,7 @@ import {
   Routes
 } from "react-router-dom";
 import Login from "./components/Forms/Login";
+import Mcq from "./components/Mcq";
 
 function App() {
   return (
@@ -20,6 +21,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/signup" element={<Signup/>} />
           <Route path="/login" element={<Login/>} />
+          <Route path="/mcq" element={<Mcq/>} />
+
 
 
         </Routes>

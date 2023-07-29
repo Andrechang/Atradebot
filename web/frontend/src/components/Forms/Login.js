@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import './Login.css';
 
@@ -14,8 +15,29 @@ const LoginPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // You can perform login logic here, like sending data to the server for authentication.
-    console.log(formData);
+
+    // Convert the form data to a JSON object
+    const userData = {
+      username: formData.username,
+      password: formData.password,
+    };
+
+    // Send the JSON object to the backend
+    fetch('/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        // Handle the response from the backend
+        console.log(data);
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
   };
 
   return (
@@ -51,3 +73,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+
