@@ -43,10 +43,12 @@ const SignUpForm = () => {
         // Handle the response from the backend
         console.log(data);
         if(data.success === true){
-          navigate('/')   
+          navigate('/')
+         
         }
         else{
           navigate('/signup')
+          alert('user already exists')   
         }
       })
       .catch((error) => {
