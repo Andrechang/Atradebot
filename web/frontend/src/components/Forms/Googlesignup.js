@@ -1,9 +1,13 @@
 import React from 'react'
 import { GoogleLoginButton } from 'react-social-login-buttons';
 import { LoginSocialGoogle } from 'reactjs-social-login';
+import { useNavigate } from 'react-router-dom';
+
 
 
 export default function Googlesignup() {
+  const navigate=useNavigate();
+
   return (
     <div>
       <LoginSocialGoogle
@@ -25,6 +29,12 @@ export default function Googlesignup() {
             body: JSON.stringify(userData),
           })
           console.log(userData);
+          if(data.success === true){
+            navigate('/')   
+          }
+          else{
+            navigate('/signup')
+          }
         }}
         onReject={(err) => {
           console.log(err);

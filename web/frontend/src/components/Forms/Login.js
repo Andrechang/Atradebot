@@ -1,12 +1,16 @@
 
 import React, { useState } from 'react';
 import './Login.css';
+import { useNavigate } from 'react-router-dom';
+
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   });
+
+  const navigate=useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,7 +23,8 @@ const LoginPage = () => {
     const userData = {
       username: formData.username,
       password: formData.password,
-      type: "webForm"
+      type: "webForm",
+
     };
 
     fetch('/login', {
@@ -37,6 +42,12 @@ const LoginPage = () => {
         // Add Redirect to home page in the below conditional
         // if(data.success === true){
         // }
+        if(data.success === true){
+          navigate('/')   
+        }
+        else{
+          navigate('/signup')
+        }
       })
       .catch((error) => {
         console.error('Error:', error);

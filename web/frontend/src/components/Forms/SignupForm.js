@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './SignupForm.css';
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+
 
 const SignUpForm = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +12,8 @@ const SignUpForm = () => {
     password: '',
     confirmPassword: '',
   });
+  const navigate=useNavigate();
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,6 +42,12 @@ const SignUpForm = () => {
       .then((data) => {
         // Handle the response from the backend
         console.log(data);
+        if(data.success === true){
+          navigate('/')   
+        }
+        else{
+          navigate('/signup')
+        }
       })
       .catch((error) => {
         console.error('Error:', error);
