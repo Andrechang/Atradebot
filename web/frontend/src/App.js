@@ -9,7 +9,7 @@ import {
   Routes
 } from "react-router-dom";
 import Login from "./components/Forms/Login";
-import Mcq from "./components/Mcq";
+import Mcq from "./components/MCQ/Mcq";
 
 function App() {
   return (

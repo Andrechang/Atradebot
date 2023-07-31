@@ -1,12 +1,16 @@
 
 import React, { useState } from 'react';
 import './Login.css';
+import { useNavigate } from 'react-router-dom';
+
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   });
+
+  const navigate=useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -16,24 +20,34 @@ const LoginPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Convert the form data to a JSON object
     const userData = {
       username: formData.username,
       password: formData.password,
+      type: "webForm",
+
     };
 
-    // Send the JSON object to the backend
-    fetch('/api/login', {
+    fetch('/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+
       },
       body: JSON.stringify(userData),
     })
       .then((response) => response.json())
       .then((data) => {
         // Handle the response from the backend
-        console.log(data);
+        console.log(data.success);
+        // Add Redirect to home page in the below conditional
+        // if(data.success === true){
+        // }
+        if(data.success === true){
+          navigate('/')   
+        }
+        else{
+          navigate('/signup')
+        }
       })
       .catch((error) => {
         console.error('Error:', error);
