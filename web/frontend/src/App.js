@@ -1,7 +1,7 @@
 import React from "react";
 import "./App.css";
 import Navbar from './components/Navbar';
-import Home from './components/Home';
+import Home from './components/Home/Home';
 import Signup from './components/Forms/Signup';
 import {
   BrowserRouter,
@@ -10,12 +10,14 @@ import {
 } from "react-router-dom";
 import Login from "./components/Forms/Login";
 import Mcq from "./components/MCQ/Mcq";
+// import Slider from "./components/Home/Slider";
 
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <Navbar />
+        {/* <Navbar /> */}
+        {/* <Slider/> */}
         <Routes>
           {/* Define your routes inside the <Routes> component */}
           <Route path="/" element={<Home />} />

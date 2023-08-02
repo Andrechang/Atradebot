@@ -48,7 +48,7 @@ const SignUpForm = () => {
         }
         else{
           navigate('/signup')
-          alert('user already exists')   
+          alert('user already exists')   ;
         }
       })
       .catch((error) => {
