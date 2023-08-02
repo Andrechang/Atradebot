@@ -14,7 +14,7 @@ def create_db():
     metadata = db.MetaData()
 
     # create a single table:
-    data = db.Table('data', metadata,
+    stocks = db.Table('stocks', metadata,
                         db.Column('id', db.Integer(), primary_key=True),
                         db.Column('symbol', db.String(255), nullable=True),
                         db.Column('name', db.String(255), nullable=True),
@@ -23,19 +23,25 @@ def create_db():
                         db.Column('live_price', db.Float(), nullable=True),
                         db.Column('prev_close', db.Float(), nullable=True),
                         db.Column('open', db.Float(), nullable=True),
+                    )
+    news = db.Table('news', metadata,
+                        db.Column('id', db.Integer(), primary_key=True),
+                        db.Column('symbol', db.String(255), nullable=True),
                         db.Column('title', db.String(255), nullable=True),
                         db.Column('news_date', db.String(255), nullable=True),
                         db.Column('url', db.String(255), nullable=True),
                         db.Column('source', db.String(255), nullable=True),
                         db.Column('text', db.String(255), nullable=True),
                     )
+                    
+    
 
     # create table in database:
     metadata.create_all(engine)
-    return engine, connection, data
+    return engine, connection, stocks, news
 
 if __name__ == "__main__":
-    engine, connection, data = create_db()
+    engine, connection, stocks, news = create_db()
 
     connection.execute(text("PRAGMA journal_mode=DELETE"))
 
@@ -52,21 +58,24 @@ if __name__ == "__main__":
     for i in symbols[:5]:
         trans = connection.begin_nested()
         try:
-            values_list = {'symbol': i}
-
             # get stock info
             try:
                 ticker = yf.Ticker(i)
                 info = ticker.info
 
-                values_list.update({
+                stock_values = {
+                    "symbol": i,
                     'name': info.get('shortName', 'NA'),
                     'sector': info.get('sector', 'NA'),
                     'industry': info.get('industry', 'NA'),
                     'live_price': info.get('regularMarketPrice', 0.0),
                     'prev_close': info.get('previousClose', 0.0),
                     'open': info.get('open', 0.0),
-                })
+                }
+
+                # Insert the stock into the database
+                query_stock = db.insert(stocks)
+                ResultProxy = connection.execute(query_stock, [stock_values])
 
             # Error handling for stock info fetching
             except requests.exceptions.HTTPError as error_terminal:
@@ -85,13 +94,18 @@ if __name__ == "__main__":
                     article = ib.reqNewsArticle(headline.providerCode, headline.articleId)
 
                     # Insert the article into the database
-                    values_list.update({
+                    news_info = {
+                        'symbol': i,
                         'title': '',  # Title not needed
                         'news_date': str(article_date),
                         'url': '',  # URL not provided
                         'source': '',  # Source not provided
                         'text': article.articleText
-                    })
+                    }
+
+                    # Insert the news into the database
+                    query_news = db.insert(news)
+                    ResultProxy = connection.execute(query_news, [news_info])
 
             # Error handling for news fetching
             except requests.exceptions.HTTPError as error_terminal:
@@ -99,9 +113,6 @@ if __name__ == "__main__":
             except Exception as e:  # General exception catch
                 print("Unexpected error while fetching news for symbol:", i)
 
-            # Insert data into table:
-            query = db.insert(data)
-            ResultProxy = connection.execute(query, [values_list])
 
             trans.commit()
             time.sleep(1)
@@ -113,7 +124,7 @@ if __name__ == "__main__":
 
     # Fetch and print the first 5 stocks from the database after processing
     #query = db.select([data]).limit(5)
-    query = data.select().limit(5)
+    query = stocks.select().limit(5)
     ResultProxy = connection.execute(query)
     ResultSet = ResultProxy.fetchall()
 
