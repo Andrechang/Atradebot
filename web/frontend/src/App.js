@@ -16,7 +16,7 @@ function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        {/* <Navbar /> */}
+        <Navbar />
         {/* <Slider/> */}
         <Routes>
           {/* Define your routes inside the <Routes> component */}

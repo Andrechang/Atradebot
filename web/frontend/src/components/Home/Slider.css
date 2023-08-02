@@ -1,0 +1,19 @@
+.Slidercontain{
+    /* display: flex;
+    justify-content: center;
+    align-items: center; */
+    /* margin-top: 20px; */
+    display: block;
+    margin: auto;
+    height: 80vh;
+    width: 80vw;
+    margin-top: 15px;
+}
+/* .carousel{
+    height: 80vh;
+    width: 80vw;
+} */
+.carousel-item{
+    height: 80vh;
+    width: 80vw;
+}

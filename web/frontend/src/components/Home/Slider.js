@@ -1,9 +1,11 @@
 import React from 'react'
+import './Slider.css'
 
 export default function Slider() {
   return (
-    <div className='container'>
-      <div id="carouselExampleCaptions" className="carousel slide">
+    <div>
+    <div className='Slidercontain'>
+      <div id="carouselExampleCaptions" className="carousel slide carousel-fade">
   <div className="carousel-indicators">
     <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="0" className="active" aria-current="true" aria-label="Slide 1"></button>
     <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="1" aria-label="Slide 2"></button>
@@ -11,21 +13,21 @@ export default function Slider() {
   </div>
   <div className="carousel-inner">
     <div className="carousel-item active">
-      <img src="https://media.istockphoto.com/id/1402430796/photo/blue-money-business-graph-finance-chart-diagram-on-economy-3d-coin-background-with-growth.webp?b=1&s=612x612&w=0&k=20&c=-mw2E81uwH78SHvtB94GSlB2tlEznnUvhowSBuPWqPQ=" className="d-block w-100" alt="error"/>
+      <img src="/images/slider1.jpg" className="d-block w-100" alt="error"/>
       <div className="carousel-caption d-none d-md-block">
         <h5>First slide label</h5>
         <p>Some representative placeholder content for the first slide.</p>
       </div>
     </div>
     <div className="carousel-item">
-      <img src="web/frontend/public/images/photo.png" className="d-block w-100" alt="error"/>
+      <img src="/images/slider2.jpg" className="d-block w-100" alt="error"/>
       <div className="carousel-caption d-none d-md-block">
         <h5>Second slide label</h5>
         <p>Some representative placeholder content for the second slide.</p>
       </div>
     </div>
     <div className="carousel-item">
-      <img src="web/frontend/public/images/photo.png" className="d-block w-100" alt="error"/>
+      <img src="/images/slider3.jpg" className="d-block w-100" alt="error"/>
       <div className="carousel-caption d-none d-md-block">
         <h5>Third slide label</h5>
         <p>Some representative placeholder content for the third slide.</p>
@@ -41,6 +43,7 @@ export default function Slider() {
     <span className="visually-hidden">Next</span>
   </button>
 </div>
+    </div>
     </div>
   )
 }
