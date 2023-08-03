@@ -23,6 +23,7 @@ def create_db():
                         db.Column('live_price', db.Float(), nullable=True),
                         db.Column('prev_close', db.Float(), nullable=True),
                         db.Column('open', db.Float(), nullable=True),
+                        db.Column("volume", db.Integer(), nullable=True),
                     )
     news = db.Table('news', metadata,
                         db.Column('id', db.Integer(), primary_key=True),
@@ -71,6 +72,7 @@ if __name__ == "__main__":
                     'live_price': info.get('regularMarketPrice', 0.0),
                     'prev_close': info.get('previousClose', 0.0),
                     'open': info.get('open', 0.0),
+                    'volume': info.get('volume', 0)
                 }
 
                 # Insert the stock into the database
