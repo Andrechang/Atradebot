@@ -1,19 +1,19 @@
-.Slidercontain{
-    /* display: flex;
-    justify-content: center;
-    align-items: center; */
-    /* margin-top: 20px; */
-    display: block;
-    margin: auto;
-    height: 80vh;
-    width: 80vw;
-    margin-top: 15px;
+
+.carousel{
+    background: url("https://images.unsplash.com/photo-1604147495798-57beb5d6af73?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2370&q=80");
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 85%);
+
 }
-/* .carousel{
-    height: 80vh;
-    width: 80vw;
-} */
-.carousel-item{
-    height: 80vh;
-    width: 80vw;
+.sliderimg{
+    height: 500px;
+    width: 600px;
+    float: right;
+}
+.caption{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    margin-top: 70px;
 }

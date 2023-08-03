@@ -1,5 +1,6 @@
 import React from 'react'
 import './Slider.css'
+import { Link } from 'react-router-dom'
 
 export default function Slider() {
   return (
@@ -13,25 +14,29 @@ export default function Slider() {
   </div>
   <div className="carousel-inner">
     <div className="carousel-item active">
-      <img src="/images/slider1.jpg" className="d-block w-100" alt="error"/>
-      <div className="carousel-caption d-none d-md-block">
-        <h5>First slide label</h5>
-        <p>Some representative placeholder content for the first slide.</p>
+      <img src="/images/slider1.jpg" className="d-block w-50 sliderimg" alt="error"/>
+      <div className="caption">
+        <h2 className='sliderheader'>AI chatbot</h2>
+        <p className='sliderpara'>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ducimus deleniti cumque id pariatur! Corporis, Lorem ipsum dolor sit amet consectetur adipisicing elit.inventore.</p>
+        <Link to="/chatbot" className='sliderbutton'>Chatbot</Link>
+
       </div>
     </div>
     <div className="carousel-item">
-      <img src="/images/slider2.jpg" className="d-block w-100" alt="error"/>
-      <div className="carousel-caption d-none d-md-block">
-        <h5>Second slide label</h5>
-        <p>Some representative placeholder content for the second slide.</p>
-      </div>
+      <img src="/images/slider2.jpg" className="d-block w-50 sliderimg" alt="error"/>
+      <div className="caption">
+        <h2 className='sliderheader'>Competing Aginst Freinds</h2>
+        <p className='sliderpara'>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ducimus deleniti cumque id pariatur! Corporis, Lorem ipsum dolor sit amet consectetur adipisicing elit.inventore.</p>
+        <Link to="/competing" className='sliderbutton'>Competing Aginst Friends</Link>  
+            </div>
+      
     </div>
     <div className="carousel-item">
-      <img src="/images/slider3.jpg" className="d-block w-100" alt="error"/>
-      <div className="carousel-caption d-none d-md-block">
-        <h5>Third slide label</h5>
-        <p>Some representative placeholder content for the third slide.</p>
-      </div>
+      <img src="/images/slider3.jpg" className="d-block w-50 sliderimg" alt="error"/>
+      <div className="caption">
+        <h2 className='sliderheader'>Rewards</h2>
+        <p className='sliderpara'>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ducimus deleniti cumque id pariatur! Corporis, Lorem ipsum dolor sit amet consectetur adipisicing elit.inventore.</p>
+        <Link to="/rewards" className='sliderbutton'>Rewards</Link>      </div>
     </div>
   </div>
   <button className="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">

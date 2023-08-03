@@ -10,7 +10,11 @@ import {
 } from "react-router-dom";
 import Login from "./components/Forms/Login";
 import Mcq from "./components/MCQ/Mcq";
-// import Slider from "./components/Home/Slider";
+import Chatbot from "./components/Chatbot";
+import Competing from "./components/Competing";
+import Rewards from "./components/Rewards";
+
+
 
 function App() {
   return (
@@ -24,6 +28,11 @@ function App() {
           <Route path="/signup" element={<Signup/>} />
           <Route path="/login" element={<Login/>} />
           <Route path="/mcq" element={<Mcq/>} />
+          <Route path="/chatbot" element={<Chatbot/>} />
+          <Route path="/competing" element={<Competing/>} />
+          <Route path="/rewards" element={<Rewards/>} />
+
+
 
 
 
