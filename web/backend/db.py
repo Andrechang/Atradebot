@@ -15,7 +15,7 @@ def save_user(user_data):
     """Save User"""
     user = {'_id': user_data['username'], 'email': user_data['email']}
     if user_data['type'] == 'webForm':
-        user_data['password'] = generate_password_hash(user_data['password'])
+        user['password'] = generate_password_hash(user_data['password'])
         user['type'] = 'webForm'
         users_collection.insert_one(user)
         return 1
