@@ -110,10 +110,6 @@ def gen_news_dataset(stocks, start_date, end_date, num_news=5, sample_mode = 'sp
     all_news = []
 
     done = [] #keep track of stocks already done
-    # to_save = [] #keep track of stocks that need to be saved
-    # if os.path.exists("saved_stocks.json"):
-    #     with open("saved_stocks.json", "r") as file:
-    #         done = json.load(file)
 
     if sample_mode == 'samples':
         events = collect_events('SPY', start_date, end_date, ret=True)
@@ -145,16 +141,6 @@ def gen_news_dataset(stocks, start_date, end_date, num_news=5, sample_mode = 'sp
                 continue
             all_news += news
         time.sleep(5)
-
-        # done.append(stock)
-        # to_save.append(stock)
-        # if to_hub and len(to_save) > 5:
-        #     dataset = Dataset.from_list(all_news)
-        #     dataset.push_to_hub(f"atradebot/{HF_news}_{to_save[0]}_{to_save[-1]}")
-        #     to_save = []
-        #     time.sleep(30)
-        # with open("saved_stocks.json", "w") as file:
-        #     json.dump(done, file)
 
     dataset = Dataset.from_list(all_news)
     return dataset
@@ -215,9 +201,10 @@ def generate_allocation_task(data):
             stocks.append(sample['stock'])
         else:
             # choose collection of stocks news
-            for i in range(0, len(stocks), 5):
-                stocks_pick = stocks[i:i+5]
-                news_pick = news_date[i:i+5]
+            num_news = 3
+            for i in range(0, len(stocks), num_news):
+                stocks_pick = stocks[i:i+num_news]
+                news_pick = news_date[i:i+num_news]
                 #get forecast and apply simple buy/sell strategy
                 rnd_alloc = utils.gen_rand_alloc(len(stocks_pick))
                 r_alloc = {}
@@ -225,7 +212,7 @@ def generate_allocation_task(data):
                     r_alloc[st] = int(rr)
                 txt = ''
                 for s, n in zip(stocks_pick, news_pick):
-                    txt += utils.get_mentionedtext(s, n['text'])
+                    txt += utils.get_mentionedtext(s, n['text'], context_length=128)
 
                 #generate output based on allocation
                 file_data.append({
@@ -258,7 +245,7 @@ def get_arg(raw_args=None):
     parser.add_argument('-t', '--thub', type=str,
                         default='', help='push to hub folder name for task dataset')
     parser.add_argument('-r', '--rhub', type=str,
-                        default='atradebot/stocks_grouped', help='push to hub folder name for raw news data')
+                        default='stocks_grouped', help='push to hub folder name for raw news data')
     parser.add_argument('--start_date', type=str, default="2022-08-31", help='start date for trading analysis')
     parser.add_argument('--end_date', type=str, default="2023-06-20", help='end data for trading analysis')
     parser.add_argument('--stocks', type=str, default="AAPL AMZN MSFT NVDA TSLA", help='stocks to analize')
@@ -273,16 +260,19 @@ if __name__ == "__main__":
         sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
         stocks = sp500.Symbol.to_list()
 
-    dataset = gen_news_dataset(stocks, args.start_date, args.end_date, 
-                                sample_mode='sp500', news_source='finhub', num_news=20)
-    if args.rhub != '':
-        dataset.push_to_hub(args.rhub)
+    dataset = load_dataset('achang/stock_group')
+    data_task = generate_allocation_task(dataset)
+    data_task.push_to_hub('achang/stocks_alloc_small0')
+    # dataset = gen_news_dataset(stocks, args.start_date, args.end_date, 
+    #                             sample_mode='sp500', news_source='finhub', num_news=20)
+    # if args.rhub != '':
+    #     dataset.push_to_hub(args.rhub)
 
-    if args.mode == 'forecast':
-        data_task = generate_forecast_task(dataset)
-    else:
-        data_task = generate_allocation_task(dataset)
+    # if args.mode == 'forecast':
+    #     data_task = generate_forecast_task(dataset)
+    # else:
+    #     data_task = generate_allocation_task(dataset)
 
-    if args.hub != '':
-        data_task.push_to_hub(args.hub)
+    # if args.hub != '':
+    #     data_task.push_to_hub(args.hub)
         

@@ -74,10 +74,10 @@ class SimpleStrategy:
 
 
 class FinForecastStrategy:
-    def __init__(self, start_date, end_date, data, stocks, cash=10000, model_id="atradebot/fin_forecast_0"):
+    def __init__(self, start_date, end_date, data, stocks, cash=10000, model_id="fin_forecast_0"):
         """
         model:
-        data: atradebot/stock_forecast_0
+        data: stock_forecast_0
         input: 
             Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
                 ## Instruction: what is the forecast for ... 

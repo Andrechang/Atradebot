@@ -64,8 +64,7 @@ def get_model(peft_model_id):
         bnb_4bit_quant_type="nf4",
         bnb_4bit_compute_dtype=torch.bfloat16
     )
-    tokenizer = AutoTokenizer.from_pretrained(model_id,
-                                            padding_side="left")
+    tokenizer = AutoTokenizer.from_pretrained(model_id, padding_side="left")
     tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(
         model_id, 
@@ -74,7 +73,7 @@ def get_model(peft_model_id):
         trust_remote_code=True)
     #setup lora
     model = PeftModel.from_pretrained(model, peft_model_id)
-    model.eval()
+    
     return model, tokenizer
 
 
@@ -97,7 +96,12 @@ def get_response(sequence, tokenizer):
         return ""
 
 def train_model(args):
-    if args.mode == 'train':            
+    if args.mode == 'train':   
+        model_name = "gpt2"    
+        model = AutoModelForCausalLM.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side="left")
+        tokenizer.pad_token = tokenizer.eos_token
+        '''
         model_id = "databricks/dolly-v2-3b"
         config = LoraConfig(
             r=8, 
@@ -126,8 +130,15 @@ def train_model(args):
         model.gradient_checkpointing_enable()
         model = prepare_model_for_kbit_training(model)
         model = get_peft_model(model, config)
+        '''
     else:
-        model, tokenizer = get_model(args.mhub)
+        model_name = "gpt2"    
+        model = AutoModelForCausalLM.from_pretrained(args.mhub)
+        tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side="left")
+        tokenizer.pad_token = tokenizer.eos_token
+
+        # model, tokenizer = get_model(args.mhub)
+        model.eval()
 
     #get data
     data = load_dataset(args.dhub)
@@ -136,6 +147,7 @@ def train_model(args):
         lambda data_point: tokenizer(
             generate_prompt(data_point, mode=args.mode),
             truncation=True,
+            max_length=512,
             padding="max_length",
         )
     )
@@ -146,7 +158,7 @@ def train_model(args):
         # auto_find_batch_size=True,
         per_device_train_batch_size=MICRO_BATCH_SIZE,
         gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-        num_train_epochs=150,
+        num_train_epochs=200,
         learning_rate=2e-5,
         fp16=True,
         save_total_limit=4,
@@ -187,11 +199,12 @@ def train_model(args):
         all_preds, all_targets = [], []
         for in_data in tqdm(eval_dataloader):
             in_data['input_ids'] = in_data['input_ids'].to(device)
+            in_data['attention_mask'] = in_data['attention_mask'].to(device)
             with torch.cuda.amp.autocast():
                 outputs = model.generate(
                     input_ids = in_data['input_ids'],
                     attention_mask = in_data['attention_mask'], 
-                    max_new_tokens=128,
+                    max_new_tokens=32,
                     pad_token_id=tokenizer.eos_token_id,
                     eos_token_id=tokenizer.eos_token_id)
             for output in outputs:
@@ -218,9 +231,9 @@ def get_parser(raw_args=None):
     parser.add_argument('--mode', type=str, default='eval',
                         help='train or eval')    
     parser.add_argument('-d', '--dhub', type=str,
-                        default='atradebot/stock_forecast_0', help='get from hub folder name for task dataset')
+                        default='achang/stocks_alloc_small0', help='get from hub folder name for task dataset')
     parser.add_argument('-m', '--mhub', type=str,
-                        default='', help='push to hub folder model')
+                        default='achang/fin_alloc_small0', help='push to hub folder model')
     args = parser.parse_args(raw_args)
     return args
 
