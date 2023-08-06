@@ -76,24 +76,30 @@ def get_model(peft_model_id):
     
     return model, tokenizer
 
-
+def get_str2date(response:str):
+    dx = response.find("### Input:")
+    match = re.search(r'\d{4}-\d{2}-\d{2}', response[dx:])
+    date = datetime.strptime(match.group(), '%Y-%m-%d').date()
+    return date
 
 def get_response(sequence, tokenizer):
-    response_key_token_id = tokenizer.encode(RESPONSE_KEY)
-    end_key_token_id = tokenizer.encode(END_KEY)
-    response_positions = np.where(sequence == response_key_token_id)[0]
-    if len(response_positions) == 0:
-        print(f"Could not find response key {response_key_token_id} in: {sequence}")
+    decoded_str = tokenizer.decode(sequence)
+    resp = decoded_str.find(RESPONSE_KEY)
+    end = decoded_str[resp:].find(END_KEY)
+    if resp == -1 and end != -1:
+        return decoded_str[: resp + end]
+    elif resp == -1 and end == -1:
+        return ''
     else:
-        response_pos = response_positions[0]
+        return decoded_str[resp + len(RESPONSE_KEY) : resp + end]
 
-    end_positions = np.where(sequence == end_key_token_id)[0]
-    if len(end_positions) > 0:
-        end_pos = end_positions[0]
-        decoded = tokenizer.decode(sequence[response_pos + 1 : end_pos]).strip()
-        return decoded    
-    else:
-        return ""
+def get_str2alloc(response:str):
+    nums = re.findall(r"[-+]?(?:\d*\.*\d+)", response)
+    keys = re.findall(r'\'(.*?)\'', response)
+    alloc = {}
+    for i, k in enumerate(keys):
+        alloc[k] = nums[i]
+    return alloc
 
 def train_model(args):
     if args.mode == 'train':   
@@ -158,7 +164,7 @@ def train_model(args):
         # auto_find_batch_size=True,
         per_device_train_batch_size=MICRO_BATCH_SIZE,
         gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-        num_train_epochs=200,
+        num_train_epochs=100,
         learning_rate=2e-5,
         fp16=True,
         save_total_limit=4,
@@ -167,8 +173,8 @@ def train_model(args):
         logging_steps=4,
         output_dir=os.path.join(OUTFOLDER, "outputs"),
         save_strategy='epoch',
-        optim="paged_adamw_8bit",
-        lr_scheduler_type = 'cosine',
+        # optim="paged_adamw_8bit",
+        # lr_scheduler_type = 'cosine',
         # evaluation_strategy = 'epoch',
         warmup_ratio = 0.01,
     )
@@ -222,7 +228,7 @@ def train_model(args):
             
         all_targets = [eval(i) for i in all_targets]
         all_preds = [eval(i) for i in all_preds]
-        print("MSE: ", mean_squared_error(all_targets, all_preds))
+        # print("MSE: ", mean_squared_error(all_targets, all_preds))
 
 def get_parser(raw_args=None):
     parser = ArgumentParser(description="model")

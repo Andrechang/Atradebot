@@ -12,8 +12,7 @@ from dateutil.relativedelta import relativedelta
 import shutil
 
 from atradebot.utils import is_business_day, business_days
-from atradebot.utils import get_config, get_price, pd_append
-from atradebot.utils import get_forecast
+from atradebot.utils import get_config, get_price, pd_append, DATE_FORMAT
 from atradebot import news_utils
 
 def get_arg(raw_args=None):
@@ -27,8 +26,6 @@ def get_arg(raw_args=None):
     config.update(vars(args))
     return args, config
 
-
-DATE_FORMAT = "%Y-%m-%d"
 
 class TradingBot:
     def __init__(self, cfg):

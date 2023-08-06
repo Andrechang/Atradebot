@@ -47,6 +47,11 @@ def get_config(cfg_file):
     return cfg
 
 
+def get_price_date(date, end_date, stock):
+    data = yf.Ticker(stock)
+    hdata = data.history(start=date.strftime(DATE_FORMAT),  end=end_date.strftime(DATE_FORMAT))
+    return hdata
+
 # run financial sentiment analysis model
 def get_forecast(stock, date):
     """get forecast for stock on date
