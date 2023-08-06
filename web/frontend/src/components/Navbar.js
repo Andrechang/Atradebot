@@ -26,6 +26,7 @@ export default function Navbar() {
           <ul className="dropdown-menu">
             <li><Link className="dropdown-item" to="/investing">Investing</Link></li>
             <li><Link className="dropdown-item" to="/chatbot">Chatbot</Link></li>
+            <li><Link className="dropdown-item" to="/paper">Paper Trading</Link></li>
             <li><hr className="dropdown-divider"/></li>
             <li><Link className="dropdown-item" to="/competing">Competing against friends</Link></li>
             <li><Link className="dropdown-item" to="/rewards">Rewards</Link></li>

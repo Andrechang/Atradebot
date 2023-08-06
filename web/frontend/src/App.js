@@ -13,6 +13,8 @@ import Mcq from "./components/MCQ/Mcq";
 import Chatbot from "./components/Chatbot";
 import Competing from "./components/Competing";
 import Rewards from "./components/Rewards";
+import PaperTrading from "./components/PaperTrading";
+
 
 
 
@@ -31,6 +33,8 @@ function App() {
           <Route path="/chatbot" element={<Chatbot/>} />
           <Route path="/competing" element={<Competing/>} />
           <Route path="/rewards" element={<Rewards/>} />
+          <Route path="/paper" element={<PaperTrading/>} />
+
 
 
 

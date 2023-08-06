@@ -44,11 +44,13 @@ const SignUpForm = () => {
         console.log(data);
         if(data.success === true){
           navigate('/')
+          alert('user signed up');
+
          
         }
         else{
           navigate('/signup')
-          alert('user already exists')   ;
+          alert('user already exists');
         }
       })
       .catch((error) => {

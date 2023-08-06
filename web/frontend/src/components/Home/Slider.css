@@ -1,11 +1,11 @@
 
 .carousel{
-    background: url("https://images.unsplash.com/photo-1604147495798-57beb5d6af73?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2370&q=80");
+    /* background: url("https://media.istockphoto.com/id/1062261710/photo/light-blue-studio-space-with-window-shadow.webp?b=1&s=170667a&w=0&k=20&c=QsmdqQKIw6XCjD5BkhPk9tFHJSIelM6ia0c_1oNX5Jo="); */
     clip-path: polygon(0 0, 100% 0, 100% 100%, 0 85%);
 
 }
 .sliderimg{
-    height: 500px;
+    height: 600px;
     width: 600px;
     float: right;
 }
@@ -16,4 +16,24 @@
     align-items: center;
     color: white;
     margin-top: 70px;
+}
+.sliderheader{
+    font-size: 50px;
+    color: burlywood;
+    margin-bottom: 10px;
+}
+.sliderpara{
+    width: 60%;
+    font-size: 25px;
+    color: cadetblue;
+}
+.sliderbutton{
+    text-decoration: none;
+    border-bottom: 2px solid white;
+    font-size: 25px;
+    color: burlywood;
+}
+.sliderbutton:hover{
+    color: grey;
+    background-color: white;
 }

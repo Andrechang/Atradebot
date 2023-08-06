@@ -43,10 +43,14 @@ const LoginPage = () => {
         // if(data.success === true){
         // }
         if(data.success === true){
-          navigate('/')   
+          navigate('/')
+          alert('logged in succesfully');
+   
         }
         else{
           navigate('/signup')
+          alert('Could not login , please sign up again');
+
         }
       })
       .catch((error) => {
