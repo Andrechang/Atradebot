@@ -1,5 +1,5 @@
 import streamlit as st
-from atradebot import backtest, main, fin_train
+from atradebot import backtest, utils, fin_train
 import yfinance as yf
 import pandas as pd
 
@@ -27,7 +27,7 @@ print(date_p)
 pred = strategy.model_run(date_p)
 pred = pred[stocks_s]
 date_ss = date_p.strftime("%b %d, %Y")
-target = main.get_forecast(stocks_s, date_ss)
+target = utils.get_forecast(stocks_s, date_ss)
 
 st.write(f"Predicted forecast for {date_s}: \n 1 mon: {pred[0]} 5 mon: {pred[1]} 1 year: {pred[2]}")
 st.write(f"Actual forecast: 1 mon: {target[0]} 5 mon: {target[1]} 1 year: {target[2]}")

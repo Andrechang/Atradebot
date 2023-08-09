@@ -28,7 +28,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-OUTFOLDER = 'exp3'
+OUTFOLDER = 'exp4'
 IGNORE_INDEX = -100
 MICRO_BATCH_SIZE = 4  # change to 4 for 3090
 BATCH_SIZE = 16

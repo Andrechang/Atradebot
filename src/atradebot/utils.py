@@ -52,25 +52,72 @@ def get_price_date(date, end_date, stock):
     hdata = data.history(start=date.strftime(DATE_FORMAT),  end=end_date.strftime(DATE_FORMAT))
     return hdata
 
-# run financial sentiment analysis model
-def get_forecast(stock, date):
-    """get forecast for stock on date
-    Args:
-        stock (string): stock id
-        date (string): date format 'Feb 2, 2019' "%b %d, %Y"
+def find_peaks_valleys(array):
+    """find peaks and valleys
 
-    Returns:
-        forecast: forecast list [1mon, 5mon, 1 yr], higher than 1. percent increase, lower than 1. percent decrease
+    :param array: list of numbers
+    :type array: List[int]
+    :return: reduced list of peaks and valleys. list of ids of the array
+    :rtype: List[int]
     """    
-    s = datetime.strptime(date, "%b %d, %Y")
+    peaks = []
+    valleys = []
+    off = 5
+    for i in range(off, len(array) - off, off):
+        if array[i - off] < array[i] > array[i + off]:
+            peaks.append(i)
+        elif array[i - off] > array[i] < array[i + off]:
+            valleys.append(i)
+    return peaks, valleys
+
+
+def filter_points(data, peak_idx, valley_idx):
+    """ignore peaks and valleys that are too close to each other
+
+    :param data: data from yfinance.download
+    :type data: pandas
+    :param peak_idx: list of ids for peaks
+    :type peak_idx: List[int]
+    :param valley_idx: list of ids for valleys
+    :type valley_idx: List[int]
+    :return: reduced list of peaks and valleys
+    :rtype: List[int]
+    """       
+    len_min = min(len(peak_idx), len(valley_idx))
+    idx = 0
+    coef_var = np.std(data)/np.mean(data)
+    peak_idx_n, valley_idx_n = [], []
+    while idx < len_min:
+        abs_diff = abs(data[peak_idx[idx]]-data[valley_idx[idx]])
+        min_diff = min(data[peak_idx[idx]], data[valley_idx[idx]])
+        percent = abs_diff/min_diff
+        if percent > coef_var*0.2: 
+            peak_idx_n.append(peak_idx[idx])
+            valley_idx_n.append(valley_idx[idx])
+        idx += 1
+    return peak_idx_n, valley_idx_n
+    
+# run financial sentiment analysis model
+def get_forecast(stock, date, add_days=[21, 5*21, 12*21]):
+    """get forecast for stock on date
+
+    :param stock: stock id
+    :type stock: str
+    :param date: date in datetime format 
+    :type date: datetime
+    :param add_days: number of days to add for forecasting in a list, defaults to [21, 5*21, 12*21]
+    :type add_days: list, optional
+    :return: forecast list based on add_days eg.: add_days=[21, 5*21, 12*21] return is stock gain/loss in [1mon, 5mon, 1 yr]. higher than 1. percent increase, lower than 1. percent decrease
+    :rtype: List[int]
+    """
+    s = date
     e = business_days(s, +3)
     data = yf.Ticker(stock)
     hdata = data.history(start=s.strftime("%Y-%m-%d"),  end=e.strftime("%Y-%m-%d"))
     price = hdata['Close'].mean()
 
     forecast = [0, 0, 0]
-    add_days = [21, 5*21, 12*21] #add business days
-    for idx, adays in enumerate(add_days):
+    for idx, adays in enumerate(add_days): #add business days
         s = business_days(s, adays)#look into future
         e = business_days(s, +3)
         hdata = data.history(start=s.strftime("%Y-%m-%d"),  end=e.strftime("%Y-%m-%d"))
@@ -102,3 +149,4 @@ def gen_rand_alloc(n_stock=5):
     remaining_percentage = 100 - sum(percentages)
     percentages.append(remaining_percentage)
     return percentages
+

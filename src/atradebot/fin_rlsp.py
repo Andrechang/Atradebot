@@ -30,7 +30,7 @@ import pandas as pd
 from trl import AutoModelForCausalLMWithValueHead, PPOConfig, PPOTrainer
 from atradebot import fin_train
 
-OUTFOLDER = 'exp3'
+OUTFOLDER = 'exp3_rl'
 
 def calc_reward(alloc, date, add=30):
     future_date = utils.business_days(date, add)
@@ -46,37 +46,8 @@ def calc_reward(alloc, date, add=30):
 
 
 def train_rl_model(args):
-
     # 1. load a pretrained model
     #https://github.com/lvwerra/trl/blob/main/examples/multi-adapter-rl/rl_finetuning.py
-
-    # peft_model_id = args.mhub
-    # config = PeftConfig.from_pretrained(peft_model_id)
-    # model_id = config.base_model_name_or_path
-    # #load model and tokenizer with quantization
-    # tokenizer = AutoTokenizer.from_pretrained(model_id, adding_side="left")
-    # tokenizer.pad_token = tokenizer.eos_token
-    # model_ = AutoModelForCausalLM.from_pretrained(
-    #     model_id, 
-    #     device_map="auto",
-    #     trust_remote_code=True)
-    # #combine lora adapter
-    # model = PeftModel.from_pretrained(model_, peft_model_id)
-    # model_merged = model.merge_and_unload()
-    # #prep for RL
-    # lora_config = LoraConfig(
-    #     r=16,
-    #     lora_alpha=32,
-    #     lora_dropout=0.05,
-    #     bias="none",
-    #     task_type="CAUSAL_LM",
-    # )
-    # model_valhead = AutoModelForCausalLMWithValueHead.from_pretrained(
-    #     model_merged,
-    #     load_in_8bit=True, 
-    #     peft_config=lora_config,
-    #     device_map="auto")
-    # model_ref = copy.deepcopy(model_valhead)
     model_name = "achang/fin_alloc_small0"#"gpt2"
     token_id = "gpt2"
     model = AutoModelForCausalLMWithValueHead.from_pretrained(model_name)
@@ -86,14 +57,19 @@ def train_rl_model(args):
 
     # 2. initialize trainer
     data = load_dataset(args.dhub)
-    data = data.shuffle().map(
-        lambda data_point: tokenizer(
-            fin_train.generate_prompt(data_point, mode='eval'),
+
+    def build_dataset(data_point):
+        prompt = fin_train.generate_prompt(data_point, mode='eval')
+        sample = tokenizer(
+            prompt,
             truncation=True,
             max_length=512,
             padding="max_length",
         )
-    )
+        sample["query"] = tokenizer.decode(sample["input_ids"])
+        return sample
+
+    data = data.shuffle().map(build_dataset)
     data.set_format(type="torch")
 
     config = PPOConfig(
@@ -102,6 +78,8 @@ def train_rl_model(args):
         mini_batch_size=1,
         gradient_accumulation_steps=4,
         optimize_cuda_cache=True,
+        log_with="tensorboard",
+        project_kwargs={'logging_dir':OUTFOLDER},
     )
 
     def collator(data):
@@ -143,6 +121,7 @@ def train_rl_model(args):
 
         # Run PPO step
         stats = ppo_trainer.step(question_tensors, response_tensors, rewards)
+        print(rewards)
         ppo_trainer.log_stats(stats, batch, rewards)
 
 

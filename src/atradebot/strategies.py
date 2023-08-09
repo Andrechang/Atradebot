@@ -189,12 +189,14 @@ class FinForecastStrategy:
 
     def generate_allocation(self, date, portfolio):
         """generate allocation for each stock using average cost investment method
-        Args:
-            date (pandas.Timestamp): date = pd.Timestamp("2021-07-22")
 
-        Returns:
-            dict{stock: number to buy/sell}: allocation for each stock
-        """        
+        :param date: date = pd.Timestamp("2021-07-22")
+        :type date: pandas.Timestamp
+        :param portfolio: current portfolio
+        :type portfolio: dict{stock: number of shares}
+        :return: allocation for each stock
+        :rtype: dict{stock: number to buy/sell}
+        """               
         delta = date.date() - self.prev_date
         idx = self.data.index.get_loc(str(date.date()))
         if date.date() == self.prev_date: #first day

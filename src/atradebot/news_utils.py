@@ -22,16 +22,16 @@ finnhub_client = finnhub.Client(api_key="cic7bdhr01ql0uqkr15gcic7bdhr01ql0uqkr16
 def get_google_news(stock, num_results=10, time_period=[]):
     """collect google search text 
     limit to 100 results per day
-    Args:
-        stock (str): stock id
-        num_results (int, optional): number of news to collect. Defaults to 10.
-        time_period (list, optional): time_period=['2019-06-28' (start_time), '2019-06-29' (end_time)]. Defaults to [].
 
-    Returns:
-        list of dict {"link", "title", "snippet", "date", "source", "text", "stock"}: list of news
-        search query
-        soup html searched
-    """    
+    :param stock: list of stock ids
+    :type stock: List[str]
+    :param num_results: number of news to collect, defaults to 10
+    :type num_results: int, optional
+    :param time_period: time_period=['2019-06-28' (start_time), '2019-06-29' (end_time)], defaults to []
+    :type time_period: list, optional
+    :return: list of news dict {"link", "title", "snippet", "date", "source", "text", "stock"}, search query, soup html searched
+    :rtype: list of dict, str, html
+    """     
     query = stock
     headers = {
             "User-Agent":
@@ -66,15 +66,15 @@ def get_google_news(stock, num_results=10, time_period=[]):
 def get_finhub_news(stock, num_results=10, time_period=[]):
     """collect from finhub news: https://finnhub.io/
     only up to 1 year old news and 60 requests per minute
-    Args:
-        stock (str): stock id
-        num_results (int, optional): number of news to collect. Defaults to 10.
-        time_period (list, optional): time_period=['2019-06-28' (start_time), '2019-06-29' (end_time)]. Defaults to [].
 
-    Returns:
-        list of dict {"link", "title", "snippet", "date", "source", "text", "stock"}: list of news
-        None
-        None
+    :param stock: list of stock ids
+    :type stock: List[str]
+    :param num_results: number of news to collect, defaults to 10
+    :type num_results: int, optional
+    :param time_period: time_period=['2019-06-28' (start_time), '2019-06-29' (end_time)], defaults to []
+    :type time_period: list, optional
+    :return: list of news in a dict{"link", "title", "snippet", "date", "source", "text", "stock"}
+    :rtype: list of dict, None, None
     """    
     results = finnhub_client.company_news(stock, _from=time_period[0], to=time_period[1])
     news_results = []
