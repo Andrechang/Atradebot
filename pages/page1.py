@@ -1,41 +1,72 @@
+# app test simple strategy
+# learning points: 
+#       average cost strategy reduces risk
+#       invest early is better than invest late
+#       diversify reduces risk
+#       potential return is inversely proportional to risk: more risk (volatility == higher std), more return
+#       efficient frontier: risk vs return is not linear
+#       invest is not trading: invest is long term, trading is short term
+#       Efficient Market Hypothesis: stocks always trade at their fair value on exchanges 
+
+
 import streamlit as st
-from atradebot import backtest, utils, fin_train
+from streamlit_extras.switch_page_button import switch_page
+from atradebot import backtest, main
+import matplotlib.pyplot as plt
 import yfinance as yf
-import pandas as pd
-
-"""
-# Test model
-"""
-
-
-past_date = "2019-01-31" 
-start_date = "2022-01-31"  
-end_date = "2023-05-20" 
-stocks = ['SPY']
-
-INIT_CAPITAL = 10000
-stocks_s = st.text_input("select stock", value="TSLA")
-date_s = st.text_input("select time", value="2021-07-22")
-
-stocks.append(stocks_s)
-data = yf.download(stocks, start=past_date, end=end_date)
-
-strategy = fin_train.FinForecastStrategy(start_date, end_date, data, [stocks_s], INIT_CAPITAL)
-
-date_p = pd.Timestamp(date_s)
-print(date_p)
-pred = strategy.model_run(date_p)
-pred = pred[stocks_s]
-date_ss = date_p.strftime("%b %d, %Y")
-target = utils.get_forecast(stocks_s, date_ss)
-
-st.write(f"Predicted forecast for {date_s}: \n 1 mon: {pred[0]} 5 mon: {pred[1]} 1 year: {pred[2]}")
-st.write(f"Actual forecast: 1 mon: {target[0]} 5 mon: {target[1]} 1 year: {target[2]}")
-
-plt = backtest.plot_cmp({"TSLA":data['Close']['TSLA']/data['Close']['TSLA'][0]})
-idx = data.index.get_loc(date_s)
-plt.scatter(date_p, data['Close']['TSLA'][idx]/data['Close']['TSLA'][0], color='red')
-st.pyplot(plt, use_container_width=True)
+from datetime import date, datetime
 
 
 
+if 'stocks_choice' not in st.session_state:
+    st.session_state.stocks_choice = {}
+
+@st.cache_resource
+def get_data(stocks, start_date, end_date):
+    data = yf.download(stocks, start=start_date, end=end_date)
+    return data
+
+time_future = st.session_state.qa_answers['time']
+init_capital = st.session_state.qa_answers['amount']
+
+
+past_date = "2018-01-31" 
+start_date = "2019-01-31"  
+end_date = "2020-05-20" 
+stocks = ['AAPL','ABBV','AMZN','MSFT','NVDA','TSLA', 'SPY', 'VUG', 'VOO']
+
+st.write("""
+# Generating Stock allocation
+""")
+
+data = get_data(stocks, past_date, end_date)
+
+backtester = backtest.PortfolioBacktester(initial_capital=init_capital, data=data, stocks=stocks, start_date=start_date)
+strategy = backtest.SimpleStrategy(start_date, end_date, data, stocks, init_capital)
+backtester.run_backtest(strategy)
+
+#TODO: generate plots for future projection: (highlight news)
+idx = data.index.get_loc(start_date)
+data_spy = data['Close']['SPY'][idx:]
+data_my = backtester.portfolio['Total'][idx:]
+plt = backtest.plot_cmp({"SPY":data_spy/data_spy[0], #normalize gains
+        "MyPort":data_my/init_capital}, show=False)
+
+for date, alloct in backtester.activity:
+    idx = data.index.get_loc(date)
+    plt.scatter(date, backtester.portfolio['Total'][idx]/init_capital, color='blue')
+    print_alloc = f"{date.strftime(main.DATE_FORMAT)}: "
+    for k, v in alloct.items():
+        if v > 0:
+            print_alloc += f" Buy {v} shares of {k} "
+        elif v < 0:
+            print_alloc += f" Sell {v} shares of {k} "
+    st.write(print_alloc)
+
+st.pyplot(plt, use_container_width=False)
+
+
+
+submitted = st.button("Learn more")
+if submitted:
+    switch_page("page3")
