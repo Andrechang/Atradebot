@@ -13,8 +13,10 @@ pip install -r requirements.txt
 ```
 
 Install using pip
+
 ```
 pip install -e .
+```
 
 if errors do:
 ```
