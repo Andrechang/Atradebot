@@ -7,42 +7,52 @@ export default function Navbar() {
     <div>
       <nav className="navbar navbar-expand-lg">
   <div className="container-fluid">
-    <Link className="navbar-brand" to="/">Learn2Grow</Link>
+    <div className="logo">LOGO</div>
+    <Link className="navbar-brand" to="/">WISEBUCK.AI</Link>
     <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span className="navbar-toggler-icon"></span>
     </button>
     <div className="collapse navbar-collapse" id="navbarSupportedContent">
       <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-        <li className="nav-item">
+        {/* <li className="nav-item">
           <Link className="nav-link " aria-current="page" to="/">Home</Link>
-        </li>
-        <li className="nav-item">
+        </li> */}
+        {/* <li className="nav-item">
           <Link className="nav-link" to="/mcq">MCQ</Link>
-        </li>
+        </li> */}
         <li className="nav-item dropdown">
           <Link className="nav-link dropdown-toggle" to="/features" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Features
           </Link>
           <ul className="dropdown-menu">
-            <li><Link className="dropdown-item" to="/investing">Investing</Link></li>
-            <li><Link className="dropdown-item" to="/chatbot">Chatbot</Link></li>
+            <li><Link className="dropdown-item" to="/investing">Investment Challenge</Link></li>
+            <li><Link className="dropdown-item" to="/chatbot">WiseBuck Chatbot</Link></li>
             <li><Link className="dropdown-item" to="/paper">Paper Trading</Link></li>
-            <li><hr className="dropdown-divider"/></li>
+            {/* <li><hr className="dropdown-divider"/></li> */}
             <li><Link className="dropdown-item" to="/competing">Competing against friends</Link></li>
-            <li><Link className="dropdown-item" to="/rewards">Rewards</Link></li>
+            <li><Link className="dropdown-item" to="/rewards">Reward Based Investing</Link></li>
 
           </ul>
         </li>
+        <li className="nav-item">
+          <Link className="nav-link " aria-current="page" to="/about">About Us</Link>
+        </li>
+        <li className="nav-item">
+          <Link className="nav-link " aria-current="page" to="/contact">Contact Us</Link>
+        </li>
+        <li className="nav-item">
+          <Link className="nav-link" to="/mcq">MCQ</Link>
+        </li>
         
       </ul>
-      <form className="form" role="search">
-        <input className="form-control" type="search" placeholder="Search" aria-label="Search"/>
-        <button className="btn btn-outline-success navbtn" type="submit">Search</button>
-        <Link to="/signup" className="btn btn-outline-success navbtn">
-              Signup
+      <Link to="/login" className=" loginnavbtn">
+              LOGIN
             </Link>
+        <Link to="/signup" className="btn signupnavbtn">
+              SIGN UP
+            </Link>
+           
 
-      </form>
     </div>
   </div>
 </nav>
