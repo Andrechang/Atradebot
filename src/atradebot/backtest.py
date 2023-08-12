@@ -6,18 +6,18 @@ from argparse import ArgumentParser
 import yfinance as yf
 from dateutil.relativedelta import relativedelta
 import matplotlib.pyplot as plt
-from atradebot.strategies import SimpleStrategy, FinForecastStrategy
+from atradebot import strategies
 
 
 def get_args(raw_args=None):
     parser = ArgumentParser(description="parameters")
-    parser.add_argument('--mode', type=str, default='simple', help='Modes: simple, news_sentiment')
-    parser.add_argument('-m', '--mhub', type=str, default='', help='get from hub folder model')
+    parser.add_argument('--mode', type=str, default='one_stock', help='Modes: simple, news_sentiment, one_stock')
+    parser.add_argument('-m', '--mhub', type=str, default='achang/fin_gpt2_one_nvda', help='get from hub folder model')
     parser.add_argument('--init_capital', type=int, default=10000, help='initial capital')
     parser.add_argument('--past_date', type=str, default="2019-01-31", help='pasta date for data')
     parser.add_argument('--start_date', type=str, default="2022-01-31", help='start date for trading analysis')
     parser.add_argument('--end_date', type=str, default="2023-05-20", help='end data for trading analysis')
-    parser.add_argument('--stocks', type=str, default="AAPL ABBV AMZN MSFT NVDA TSLA", help='stocks to analize')
+    parser.add_argument('--stocks', type=str, default="NVDA", help='stocks to analize')
     args = parser.parse_args(raw_args)
     return args
 
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     print('start date for analysis:', args.start_date)
     print('end data for analysis:', args.end_date)
     stocks_s = args.stocks.split()
-    stocks = stocks_s + ['SPY', 'VUG', 'VOO']
+    stocks = stocks_s + ['SPY'] #add spy for comparison
     print('Selected stocks:', stocks_s)
     print('Extended selected stocks:', stocks)
     print('Initial capital:', args.init_capital)
@@ -109,9 +109,11 @@ if __name__ == "__main__":
     backtester = PortfolioBacktester(initial_capital=args.init_capital, data=data, stocks=stocks, start_date=args.start_date)
 
     if args.mode == 'simple':
-        strategy = SimpleStrategy(args.start_date, args.end_date, data, stocks, args.init_capital)
+        strategy = strategies.SimpleStrategy(args.start_date, args.end_date, data, stocks, args.init_capital)
     elif args.mode == 'news_sentiment':
-        strategy = FinForecastStrategy(args.start_date, args.end_date, data, stocks_s, args.init_capital, model_id=args.mhub)
+        strategy = strategies.FinForecastStrategy(args.start_date, args.end_date, data, stocks_s, args.init_capital, model_id=args.mhub)
+    elif args.mode == 'one_stock':
+        strategy = strategies.FinOneStockStrategy(args.start_date, args.end_date, data, stocks_s, args.init_capital, model_id=args.mhub)
     else:
         print('Mode not recognized!')
         exit(1)

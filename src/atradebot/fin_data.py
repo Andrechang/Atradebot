@@ -95,16 +95,8 @@ def gen_news_dataset(stocks, start_date, end_date, num_news=5, sample_mode = 'sp
             start = start.strftime(main.DATE_FORMAT)
             end = main.business_days(event, +1)#one day after
             end = end.strftime(main.DATE_FORMAT)
-            try:
-                if news_source == 'google':
-                    news, _, _ = news_utils.get_google_news(stock=stock, num_results=num_news, time_period=[start, end])
-                else:
-                    news, _, _ = news_utils.get_finhub_news(stock=stock, num_results=num_news, time_period=[start, end])
-
-                if news == []:
-                    print(f"Can't collect news for {stock} dates {start} to {end}")
-            except:
-                print(f"Can't collect news for {stock} dates {start} to {end}")
+            news = news_utils.get_news(stock, [start, end], num_news, news_source)
+            if not news:
                 continue
             all_news += news
         time.sleep(5)
@@ -209,7 +201,7 @@ def generate_onestock_task(data, num_news = 3, portifolio_scenarios = 10, cash =
             ## Instruction: I have {n} {AAPL} stocks and {x} cash to invest. Given the recent news, should I buy, sell or hold {AAPL} stocks ? 
             ## Input: date, news snippet
     output:
-            ## Response: allocation suggestion in percentage
+            ## Response: allocation suggestion
 
     Args:
         data (huggingface dataset): dataset in hugginface format for raw news data
@@ -260,7 +252,8 @@ def generate_onestock_task(data, num_news = 3, portifolio_scenarios = 10, cash =
             
                     #generate output based on allocation
                     file_data.append({
-                        'instruction': f"I have {stocks_own} {stock_id} stocks and {cash} cash to invest. Given the recent news, should I buy, sell or hold {stock_id} stocks ? ", 
+                        'instruction': f"I have {stocks_own} {stock_id} stocks and {cash} cash to invest. \
+                            Given the recent news, should I buy, sell or hold {stock_id} stocks ? ", 
                         'input':f"News from {sample['date']}, {txt}", 
                         'output':f"{r_alloc}"})
             prev_date = sample['date']

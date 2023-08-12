@@ -9,12 +9,10 @@ from pypfopt import risk_models, expected_returns
 from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
 from pypfopt.efficient_frontier import EfficientFrontier
 import re
-from atradebot.utils import business_days
-from atradebot.news_utils import get_google_news, get_finhub_news
-from atradebot.fin_train import get_model, generate_prompt
 import torch
 import numpy as np
-from atradebot.fin_train import get_response
+from atradebot.utils import DATE_FORMAT
+from atradebot import fin_train, news_utils, utils
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -74,20 +72,32 @@ class SimpleStrategy:
 
 
 class FinForecastStrategy:
-    def __init__(self, start_date, end_date, data, stocks, cash=10000, model_id="fin_forecast_0"):
+    def __init__(self, start_date:str, end_date:str, data, stocks, cash=10000, model_id="fin_forecast_0"):
         """
-        model:
-        data: stock_forecast_0
-        input: 
+        data: stock_forecast_0 generated from fin_data.generate_forecast_task
+        model: trained using fin_train.py
+        model input: 
             Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
                 ## Instruction: what is the forecast for ... 
                 ## Input: date, news title, news snippet
-        output:
+        model output:
                 ## Response: forecast percentage change for 1mon, 5mon, 1 yr
-        """
 
-        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        :param start_date: date start to backtest in format yyyy-mm-dd
+        :type start_date: str
+        :param end_date: date end to backtest in format yyyy-mm-dd
+        :type end_date: str
+        :param data: pandas dataframe from yfinance
+        :type data: pandas dataframe
+        :param stocks: list of stocks to backtest
+        :type stocks: List[str]
+        :param cash: amount of cash to invest, defaults to 10000
+        :type cash: int, optional
+        :param model_id: huggingface model id to use, defaults to "fin_forecast_0"
+        :type model_id: str, optional
+        """        
+        start_date = datetime.strptime(start_date, DATE_FORMAT).date()
+        end_date = datetime.strptime(end_date, DATE_FORMAT).date()
         self.prev_date = start_date #previous date for rebalance
         self.stocks = {i: 0 for i in stocks}
         
@@ -100,31 +110,34 @@ class FinForecastStrategy:
         self.days_interval = delta.days/len(self.cash) #rebalance 4 times
         self.data = data['Adj Close']
 
-        self.model, self.tokenizer = get_model(model_id)
+        self.model, self.tokenizer = fin_train.get_model(model_id)
         self.model.to(device)
 
     def model_run(self, date, num_news=5):
         """get news before date and forecast using model
 
-        Args:
-            date (pandas.Timestamp): date = pd.Timestamp("2021-07-22")
-            num_news (int, optional): number of news to get. Defaults to 5.
-
-        Returns:
-            dict{stock: list of pred }: prediction for each stock. Prediction format [1 mon, 5 mon, 1 yr]
-        """
-
+        :param date: date = pd.Timestamp("2021-07-22")
+        :type date: pandas.Timestamp
+        :param num_news: number of news to get, defaults to 5
+        :type num_news: int, optional
+        :return: prediction for each stock. Prediction format [1 mon, 5 mon, 1 yr]
+        :rtype: dict{stock: list of pred }
+        """        
+        
         end = date.date()
-        start = business_days(end, -5)
+        start = utils.business_days(end, -5)
+
         all_stocks = {}
         for stock in self.stocks:
-            news, _, _ = get_google_news(stock=stock, num_results=num_news, time_period=[start, end])
-            assert len(news) > 0, "no news found, google search blocked error"
+            news = news_utils.get_news(stock=stock, time_period=[start, end], num_results=num_news, news_source='google')
+            if not news:
+                print(f"No news for {stock} on dates: {start} to {end}. Source: google")
+                continue
             all_pred = []
             for new in news:
                 in_dict = {'instruction': f"what is the forecast for {new['stock']}", 
                         'input':f"{new['date']} {new['title']} {new['snippet']}"}
-                prompt = generate_prompt(in_dict, mode='eval')
+                prompt = fin_train.generate_prompt(in_dict, mode='eval')
                 in_data = self.tokenizer(prompt, return_tensors="pt", truncation=True, padding="max_length")
                 in_data['input_ids'] = in_data['input_ids'].to(device)
                 with torch.cuda.amp.autocast():
@@ -135,7 +148,7 @@ class FinForecastStrategy:
                         eos_token_id= self.tokenizer.eos_token_id
                     )
 
-                response = get_response(outputs[0].cpu().numpy(), self.tokenizer)
+                response = fin_train.get_response(outputs[0].cpu().numpy(), self.tokenizer)
                 pred = re.findall(r"[-+]?(?:\d*\.*\d+)", response)
                 print(f"{new['stock']} forecast: {response} \n {pred}")
                 if len(pred) > 3:
@@ -154,15 +167,20 @@ class FinForecastStrategy:
 
     def model_allocation(self, date, amount_invest, prices, portfolio, sell_mode=False):
         """get allocation for each stock based on model predictions
-        Args:
-            date (pandas.Timestamp): date = pd.Timestamp("2021-07-22")
-            amount_invest (int): amount to invest
-            prices (pandas.Series): list of stock prices
-            portfolio (dict{stock: number of shares}): current portfolio
-            sell_mode (bool, optional): whether to sell stocks. Defaults to False.
-        Returns:
-            dict{stock: number to buy/sell}: allocation for each stock
-        """        
+
+        :param date: date = pd.Timestamp("2021-07-22")
+        :type date: pandas.Timestamp
+        :param amount_invest: amount to invest
+        :type amount_invest: int
+        :param prices: list of stock prices
+        :type prices: pandas.Series
+        :param portfolio: current portfolio (check backtest.py for format)
+        :type portfolio: pandas.DataFrame dict{stock: number of shares}
+        :param sell_mode: whether to sell stocks, defaults to False
+        :type sell_mode: bool, optional
+        :return: allocation for each stock
+        :rtype: dict{stock: number to buy/sell}
+        """             
         all_stocks = self.model_run(date)
         #pick top increasing forecast
         future_mode = 0 #choose timeline 1mon, 5mon, 1yr
@@ -192,21 +210,19 @@ class FinForecastStrategy:
 
         :param date: date = pd.Timestamp("2021-07-22")
         :type date: pandas.Timestamp
-        :param portfolio: current portfolio
-        :type portfolio: dict{stock: number of shares}
+        :param portfolio: current portfolio (check backtest.py for format)
+        :type portfolio: pandas.DataFrame dict{stock: number of shares}
         :return: allocation for each stock
         :rtype: dict{stock: number to buy/sell}
         """               
         delta = date.date() - self.prev_date
         idx = self.data.index.get_loc(str(date.date()))
         if date.date() == self.prev_date: #first day
-            # allocation, leftover = max_sharpe_allocation(self.data[0:idx], amount_invest=self.cash[self.cash_idx])
             allocation, leftover = self.model_allocation(date, amount_invest=self.cash[self.cash_idx], 
                 prices=self.data.iloc[idx], portfolio=portfolio, sell_mode=False)
             self.cash_idx += 1                        
             return allocation
         elif delta.days > self.days_interval: #rebalance 
-            # allocation, leftover = max_sharpe_allocation(self.data[0:idx], amount_invest=self.cash[self.cash_idx])
             allocation, leftover = self.model_allocation(date, amount_invest=self.cash[self.cash_idx], 
                 prices=self.data.iloc[idx], portfolio=portfolio, sell_mode=True)
             self.prev_date = date.date()
@@ -214,3 +230,167 @@ class FinForecastStrategy:
             return allocation
         else:
             return self.stocks
+
+
+
+class FinOneStockStrategy:
+    def __init__(self, start_date:str, end_date:str, data, stocks, cash=10000, model_id="fin_gpt2_one_nvda", news_src="google"):
+        """
+        data: stocks_one_nvda generated from fin_data.generate_onestock_task
+        model: trained using fin_train.py
+        model input: 
+            Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+                ## Instruction: I have {n} {AAPL} stocks and {x} cash to invest. Given the recent news, should I buy, sell or hold {AAPL} stocks ? 
+                ## Input: date, news snippet
+        model output:
+                ## Response: allocation suggestion
+
+        :param start_date: date start to backtest in format yyyy-mm-dd
+        :type start_date: str
+        :param end_date: date end to backtest in format yyyy-mm-dd
+        :type end_date: str
+        :param data: pandas dataframe from yfinance
+        :type data: pandas dataframe
+        :param stocks: list of stocks to backtest
+        :type stocks: List[str]
+        :param cash: amount of cash to invest, defaults to 10000
+        :type cash: int, optional
+        :param model_id: huggingface model id to use, defaults to "fin_forecast_0"
+        :type model_id: str, optional
+        """        
+        start_date = datetime.strptime(start_date, DATE_FORMAT).date()
+        end_date = datetime.strptime(end_date, DATE_FORMAT).date()
+        self.prev_date = start_date #previous date for rebalance
+        self.stocks = {i: 0 for i in stocks}
+        
+        self.cash = [cash*0.5, cash*0.3, cash*0.1, cash*0.1] #amount to invest in each rebalance
+        self.cash_idx = 0
+
+        self.start_date = start_date
+        self.end_date = end_date
+        delta = end_date - start_date
+        self.days_interval = delta.days/len(self.cash) #rebalance 4 times
+        self.data = data['Adj Close']
+
+        self.model, self.tokenizer = fin_train.get_slm_model(model_id)
+        self.model.to(device)
+        self.news_src = news_src
+
+    def model_run(self, date, portfolio, num_news=3, amount_invest=10000):
+        """get news before date and forecast using model
+
+        :param date: date = pd.Timestamp("2021-07-22")
+        :type date: pandas.Timestamp
+        :param portfolio: current portfolio (check backtest.py for format)
+        :type portfolio: pandas.DataFrame dict{stock: number of shares}
+        :param num_news: number of news to get, defaults to 5
+        :type num_news: int, optional
+        :param amount_invest: amount to invest
+        :type amount_invest: int
+        :return: prediction for each stock. Prediction format [1 mon, 5 mon, 1 yr]
+        :rtype: dict{stock: list of pred }
+        """        
+        
+        end = date.date()
+        start = utils.business_days(end, -5) # also get news 5 days before
+        all_stocks = {}
+        for stock in self.stocks:
+            #get news
+            news = news_utils.get_news(stock, [start, end], num_news, self.news_src)
+            if not news:
+                print(f"No news for {stock} on dates: {start} to {end}. Source: {self.news_src}")
+                continue
+
+            #generate prompt
+            txt = '' # collect only parts of news that references the stock
+            for new in news:
+                txt += utils.get_mentionedtext(stock, new['text'], context_length=128)
+                # TODO use embeding doc2vec to get relevant part of news
+
+            #generate output based on allocation
+            in_dict = {
+                'instruction':f"I have {amount_invest} cash to invest. Given the recent news, should I buy, sell or hold {stock} stocks ? ",
+                'input':f"News from {end}, {txt}", 
+                }
+            if portfolio[stock][date] > 0:
+                in_dict['instruction'] = f"I have {portfolio[stock][date]} {stock} stocks and {amount_invest} cash to invest. \
+                    Given the recent news, should I buy, sell or hold {stock} stocks ? "
+            prompt = fin_train.generate_prompt(in_dict, mode='eval')
+            
+            #run model
+            in_data = self.tokenizer(prompt, return_tensors="pt", truncation=True, padding="max_length", max_length=512)
+            in_data['input_ids'] = in_data['input_ids'].to(device)
+            in_data['attention_mask'] = in_data['attention_mask'].to(device)
+            with torch.cuda.amp.autocast():
+                outputs = self.model.generate(input_ids = in_data['input_ids'], 
+                    attention_mask = in_data['attention_mask'],
+                    max_new_tokens=128,
+                    pad_token_id= self.tokenizer.eos_token_id,
+                    eos_token_id= self.tokenizer.eos_token_id
+                )
+
+            response = fin_train.get_response(outputs[0].cpu().numpy(), self.tokenizer)
+            print(f"on date {end} suggestion for {stock} is: {response} \n")
+            
+            nnum = re.findall(r'\d+', response)
+            if nnum and nnum[0].isnumeric():
+                nnum = int(nnum[0])
+            if 'buy' in response.lower():
+                all_stocks[stock] = int(nnum)
+            elif 'sell' in response.lower():
+                all_stocks[stock] = -int(nnum)
+            else: #hold
+                all_stocks[stock] = 0
+
+        return all_stocks
+
+
+    def model_allocation(self, date, prices, portfolio, amount_invest=10000):
+        """get allocation for each stock based on model predictions
+
+        :param date: date = pd.Timestamp("2021-07-22")
+        :type date: pandas.Timestamp
+        :param prices: list of stock prices
+        :type prices: pandas.Series
+        :param portfolio: current portfolio (check backtest.py for format)
+        :type portfolio: pandas.DataFrame dict{stock: number of shares}
+        :param amount_invest: amount to invest
+        :type amount_invest: int
+        :return: allocation for each stock
+        :rtype: dict{stock: number to buy/sell}
+        """             
+        allocation = self.model_run(date, portfolio, amount_invest)
+        for stock in allocation:
+            max_stocks = amount_invest/prices[stock]
+            allocation[stock] = min(allocation[stock], max_stocks)
+
+        leftover = portfolio['Cash'] - sum([prices[stock]*allocation[stock] for stock in allocation])
+        return allocation, leftover
+        
+
+    def generate_allocation(self, date, portfolio):
+        """generate allocation for each stock using average cost investment method
+
+        :param date: date = pd.Timestamp("2021-07-22")
+        :type date: pandas.Timestamp
+        :param portfolio: current portfolio (check backtest.py for format)
+        :type portfolio: pandas.DataFrame dict{stock: number of shares}
+        :return: allocation for each stock
+        :rtype: dict{stock: number to buy/sell}
+        """               
+        delta = date.date() - self.prev_date
+        idx = self.data.index.get_loc(str(date.date()))
+        if date.date() == self.prev_date: #first day
+            allocation, leftover = self.model_allocation(date, amount_invest=self.cash[self.cash_idx], 
+                prices=self.data.iloc[idx], portfolio=portfolio)
+            self.cash_idx += 1                        
+            return allocation
+        elif delta.days > self.days_interval: #rebalance 
+            allocation, leftover = self.model_allocation(date, amount_invest=self.cash[self.cash_idx], 
+                prices=self.data.iloc[idx], portfolio=portfolio)
+            self.prev_date = date.date()
+            self.cash_idx += 1
+            return allocation
+        else:
+            return self.stocks
+            

@@ -54,8 +54,14 @@ def generate_prompt(data_point, mode='train'):
     return prompt 
 
 
-def get_model(peft_model_id):
-    config = PeftConfig.from_pretrained(peft_model_id)
+def get_slm_model(model_name):
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained("gpt2", padding_side="left")
+    tokenizer.pad_token = tokenizer.eos_token
+    return model, tokenizer
+
+def get_model(model_id):
+    config = PeftConfig.from_pretrained(model_id)
     model_id = config.base_model_name_or_path
     #load model and tokenizer with quantization
     bnb_config = BitsAndBytesConfig(
@@ -72,7 +78,7 @@ def get_model(peft_model_id):
         device_map="auto",
         trust_remote_code=True)
     #setup lora
-    model = PeftModel.from_pretrained(model, peft_model_id)
+    model = PeftModel.from_pretrained(model, model_id)
     
     return model, tokenizer
 
@@ -164,7 +170,7 @@ def train_model(args):
         # auto_find_batch_size=True,
         per_device_train_batch_size=MICRO_BATCH_SIZE,
         gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-        num_train_epochs=100,
+        num_train_epochs=150,
         learning_rate=2e-5,
         fp16=True,
         save_total_limit=4,
@@ -215,20 +221,28 @@ def train_model(args):
                     eos_token_id=tokenizer.eos_token_id)
             for output in outputs:
                 response = get_response(output.cpu().numpy(), tokenizer)
-                pred = re.findall(r"[-+]?(?:\d*\.*\d+)", response)
-                target = re.findall(r"[-+]?(?:\d*\.*\d+)", in_data['output'][0])
+                target = in_data['output'][0] 
                 print("sample: ", response)
                 print("target: ", target)
-                if len(pred) > 3:
-                    pred = pred[:3]
-                if len(pred) < 3:
-                    continue
-                all_preds += pred
+                all_preds += response
                 all_targets += target
-            
-        all_targets = [eval(i) for i in all_targets]
-        all_preds = [eval(i) for i in all_preds]
-        # print("MSE: ", mean_squared_error(all_targets, all_preds))
+        
+        # metric_forecast_task(all_targets, all_preds) #for forecast models
+
+def metric_forecast_task(all_targets, all_preds):
+    atgt, apred = [], []
+    for target, response in zip(all_targets, all_preds):
+        pred = re.findall(r"[-+]?(?:\d*\.*\d+)", response)
+        tgt = re.findall(r"[-+]?(?:\d*\.*\d+)", target)     
+        if len(pred) > 3:
+            pred = pred[:3]
+        if len(pred) < 3:
+            continue
+        atgt += tgt
+        apred += pred
+    atgt = [eval(i) for i in atgt]
+    apred = [eval(i) for i in apred]
+    print("MSE: ", mean_squared_error(atgt, apred))
 
 def get_parser(raw_args=None):
     parser = ArgumentParser(description="model")
@@ -237,9 +251,9 @@ def get_parser(raw_args=None):
     parser.add_argument('--mode', type=str, default='eval',
                         help='train or eval')    
     parser.add_argument('-d', '--dhub', type=str,
-                        default='achang/stocks_alloc_small0', help='get from hub folder name for task dataset')
+                        default='achang/stocks_one_nvda', help='get from hub folder name for task dataset')
     parser.add_argument('-m', '--mhub', type=str,
-                        default='achang/fin_alloc_small0', help='push to hub folder model')
+                        default='achang/fin_gpt2_one_nvda', help='push to hub folder model')
     args = parser.parse_args(raw_args)
     return args
 

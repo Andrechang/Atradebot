@@ -98,3 +98,35 @@ def get_finhub_news(stock, num_results=10, time_period=[]):
             )
     search_req, soup = None, None
     return news_results, search_req, soup
+
+def get_news(stock, time_period, num_results=10, news_source='google'):
+    """wrapper function to get news from different sources
+
+    :param stock: list of stock ids
+    :type stock: List[str]
+    :param time_period: time_period=['2019-06-28' (start_time), '2019-06-29' (end_time)], defaults to []
+    :type time_period: list, optional
+    :param num_results: number of news to collect, defaults to 10
+    :type num_results: int, optional
+    :param news_source: 'google' or 'finhub', defaults to 'finhub'
+    :type news_source: str, optional
+    :return: list of news dict {"link", "title", "snippet", "date", "source", "text", "stock"}, search query, soup html searched
+    :rtype: list of dict, str, html
+    """    
+    try:
+        if news_source == 'google':
+            news, _, _ = get_google_news(stock=stock, num_results=num_results, time_period=time_period)
+        else:
+            news, _, _ = get_finhub_news(stock=stock, num_results=num_results, time_period=time_period)
+
+        if news == []:
+            print(f"Can't collect news for {stock} dates {time_period[0]} to {time_period[1]}")
+    except:
+        print(f"Can't collect news for {stock} dates {time_period[0]} to {time_period[1]}. Error happened.")
+        return []
+
+    return news
+
+if __name__ == "__main__":
+    news = get_news(stock='AAPL', time_period=['2020-01-01', '2020-01-02'], num_results=3, news_source='google')
+    print(news)

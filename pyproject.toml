@@ -4,11 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "atradebot"
-version = "0.0.0"
+version = "0.1.0"
 authors = [
   { name="AndreChang", email="andrechang67@gmail.com" },
 ]
 description = "atradebot package"
+keywords = ["algotrade", "fintech", "tutorial"]
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
@@ -16,5 +17,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-
+dynamic = ["dependencies"]
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
