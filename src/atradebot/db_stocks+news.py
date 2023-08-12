@@ -34,6 +34,17 @@ def create_db():
                         db.Column('source', db.String(255), nullable=True),
                         db.Column('text', db.String(255), nullable=True),
                     )
+    etfs = db.Table("etfs", metadata, 
+                    db.Column("id", db.Integer(), primary_key=True),
+                    db.Column("symbol", db.String(255), nullable=True),
+                    db.Column('name', db.String(255), nullable=True),
+                    db.Column('sector', db.String(255), nullable=True),
+                    db.Column('industry', db.String(255), nullable=True),
+                    db.Column('live_price', db.Float(), nullable=True),
+                    db.Column('prev_close', db.Float(), nullable=True),
+                    db.Column('open', db.Float(), nullable=True),
+                    db.Column("volume", db.Integer(), nullable=True),
+                    )
                     
     
 
@@ -47,13 +58,16 @@ if __name__ == "__main__":
     connection.execute(text("PRAGMA journal_mode=DELETE"))
 
     # get list of stocks:
-    stock_df = pd.read_excel('src/atradebot/SP_500_Companies.xlsx')
+    stock_df = pd.read_excel('SP_500_Companies.xlsx')
     symbols = stock_df['Symbol'].tolist()
 
     ib = IB()
     ib.connect('127.0.0.1', 7496, clientId=1)
     news_providers = ib.reqNewsProviders()
     codes = '+'.join(news_provider.code for news_provider in news_providers)
+
+    # get list of etfs (top 10)
+    etfs_symbols = ["SPY", "IVV", "VOO", "VTI", "QQQ", "VEA", "VTV", "IEFA", "BND", "VUG"]
 
     # get data for symbols:
     for i in symbols[:5]:
@@ -123,6 +137,44 @@ if __name__ == "__main__":
         except Exception as e:  # General exception catch
             print("Unexpected error:", e)
             trans.rollback()
+    
+    # get data for etf symbols
+    for i in etfs_symbols:
+        trans = connection.begin_nested()
+        try: 
+            try:
+                #get etf info
+                ticker = yf.Ticker(i)
+                info = ticker.info()
+
+                etf_values = {
+                    "symbol": i,
+                    'name': info.get('shortName', 'NA'),
+                    'sector': info.get('sector', 'NA'),
+                    'industry': info.get('industry', 'NA'),
+                    'live_price': info.get('regularMarketPrice', 0.0),
+                    'prev_close': info.get('previousClose', 0.0),
+                    'open': info.get('open', 0.0),
+                    'volume': info.get('volume', 0)
+                }
+
+                # Insert etfs into the database:
+                query_etf = db.insert(etfs)
+                ResultProxy = connection.execute(query_etf, [etf_values])
+
+            # Error handling for ETF info fetching:
+            except requests.exceptions.HTTPError as error_terminal:
+                print("HTTPError while fetching stock info for symbol:", i)
+            except Exception as e:  # General exception catch
+                print("Unexpected error while fetching stock info for symbol:", i)
+
+            trans.commit()
+            time.sleep(1)
+        # Error handling:
+        except Exception as e:  # General exception catch
+            print("Unexpected error:", e)
+            trans.rollback()
+
 
     # Fetch and print the first 5 stocks from the database after processing
     #query = db.select([data]).limit(5)
