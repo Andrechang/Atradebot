@@ -6,11 +6,16 @@ st.markdown(
     """
     Click on the pages on the left to navigate through different parts of atradebot.
 
-    ## page0: app to calculate risk level and recommend stocks based on saved portfolio
+    ### [App](/page0): 
+    App to recommend stocks based on saved portfolio
 
-    ## page1: app test average cost strategy
-    
-    ## page2: app test strategy using model to forecast stock gain/loss based on news sentiment
+    ### [Tests](/page1): 
+    Test different strategies and models:
+    1. SimpleStrategy: Test average cost strategy and sharpe allocation
+    2. FinForecastStrategy: Test strategy using model to forecast stock gain/loss based on news sentiment
 
+    [Github](https://github.com/Andrechang/Atradebot)
+
+    [Documentation](https://atradebot.readthedocs.io/en/latest/index.html#)
 """
 )

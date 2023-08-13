@@ -33,8 +33,20 @@ def max_sharpe_allocation(data, amount_invest):
 
 class SimpleStrategy:
     def __init__(self, start_date, end_date, data, stocks, cash=10000):
-        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        """Create simple strategy based on sharpe allocation
+
+        :param start_date: date start to backtest in format yyyy-mm-dd
+        :type start_date: datetime.date
+        :param end_date: date end to backtest in format yyyy-mm-dd
+        :type end_date: datetime.date
+        :param data: stock price data with train date and eval date. data[train_start_data:eval_end_date]
+        :type data: pandas.DataFrame
+        :param stocks: list of stocks to trade
+        :type stocks: List[str]
+        :param cash: amount to invest, defaults to 10000
+        :type cash: int, optional
+        """        
+
         self.prev_date = start_date  #previous date for rebalance
         self.stocks = {i: 0 for i in stocks}
         
@@ -49,12 +61,13 @@ class SimpleStrategy:
 
     def generate_allocation(self, date, portfolio):
         """Generate allocation based on the date
-        Args:
-            date (pandas.Timestamp): date to generate allocation
-
-        Returns:
-            dict{"stock": number of stocks to buy/sell }: allocation for each stock
-        """
+        :param date: date to generate allocation
+        :type date: pandas.Timestamp
+        :param portfolio: current portfolio (check backtest.py for format)
+        :type portfolio: pandas.DataFrame dict{stock: number of shares}
+        :return: allocation for each stock
+        :rtype: dict{"stock": number of stocks to buy/sell }
+        """        
         delta = date.date() - self.prev_date
         idx = self.data.index.get_loc(str(date.date()))
         if date.date() == self.prev_date: #first day
