@@ -34,4 +34,4 @@ typing_extensions==4.7.1
 yfinance
 zstandard==0.21.0
 sphinx-rtd-theme
-.
+atradebot @ git+https://github.com/Andrechang/Atradebot@main
