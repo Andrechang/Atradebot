@@ -33,17 +33,27 @@ IGNORE_INDEX = -100
 MICRO_BATCH_SIZE = 4  # change to 4 for 3090
 BATCH_SIZE = 16
 GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
-#from databricks/dolly-v2-3b
+
 INSTRUCTION_KEY = "### Instruction:"
 RESPONSE_KEY = "### Response:"
 END_KEY = "### End"
 
 
 def generate_prompt(data_point, mode='train'):
-    # from https://github.com/tloen/alpaca-lora
+    """generate prompt for training or eval
+    https://github.com/tloen/alpaca-lora
+
+    :param data_point: text data with instruction, input, output
+    :type data_point: dict{"instruction": str, "input": str, "output": str}
+    :param mode: generate prompt for train or eval, defaults to 'train'
+    :type mode: str, optional
+    :return: prompt to fed model
+    :rtype: str
+    """    
     prompt = ""
     if data_point["instruction"]:
-        prompt = f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+        prompt = f"""Below is an instruction that describes a task, paired with an input that provides further context. \
+            Write a response that appropriately completes the request.
             ### Instruction: {data_point["instruction"]}
             ### Input: {data_point["input"]}\n ### Response:"""
     else:
@@ -53,16 +63,89 @@ def generate_prompt(data_point, mode='train'):
             prompt += f""" {data_point["output"]} ### End"""
     return prompt 
 
+def get_str2date(response:str):
+    """get date from response
+
+    :param response: string following the fin_train.py generate_prompt format
+    :type response: str
+    :return: date
+    :rtype: datetime.date
+    """    
+    dx = response.find("### Input:")
+    match = re.search(r'\d{4}-\d{2}-\d{2}', response[dx:])
+    date = datetime.strptime(match.group(), '%Y-%m-%d').date()
+    return date
+
+def get_response(sequence, tokenizer):
+    """get response from model output sequence
+
+    :param sequence: output sequence from model
+    :type sequence: str
+    :param tokenizer: model tokenizer
+    :type tokenizer: Tokenizer
+    :return: only response part of the sequence
+    :rtype: str
+    """    
+    decoded_str = tokenizer.decode(sequence)
+    resp = decoded_str.find(RESPONSE_KEY)
+    end = decoded_str[resp:].find(END_KEY)
+    if resp == -1 and end != -1:
+        return decoded_str[: resp + end]
+    elif resp == -1 and end == -1:
+        return ''
+    else:
+        return decoded_str[resp + len(RESPONSE_KEY) : resp + end]
+
+def get_str2alloc(response:str):
+    """get allocation for backtesting from response
+
+    :param response: response from model
+    :type response: str
+    :return: allocation generated from response
+    :rtype: dict{stock str: stocks buy/sell int}
+    """    
+    nums = re.findall(r"[-+]?(?:\d*\.*\d+)", response)
+    keys = re.findall(r'\'(.*?)\'', response)
+    alloc = {}
+    for i, k in enumerate(keys):
+        alloc[k] = nums[i]
+    return alloc
+
 
 def get_slm_model(model_name):
+    """get a small language model
+
+    :param model_name: id of model from huggingface
+    :type model_name: str
+    :return:  model, tokenizer
+    :rtype:  ModelForCausalLM, Tokenizer
+    """    
     model = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained("gpt2", padding_side="left")
     tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer
 
-def get_model(model_id):
-    config = PeftConfig.from_pretrained(model_id)
-    model_id = config.base_model_name_or_path
+def get_peft_model(model_id, mode='eval'):
+    """get a model with peft 
+    :param model_id: id of model from huggingface
+    :type model_id: str
+    :param mode: eval or train mode, defaults to 'eval'
+    :type mode: str, optional
+    :return: model, tokenizer
+    :rtype: peft ModelForCausalLM, Tokenizer
+    """    
+    if mode == 'eval':
+        config = PeftConfig.from_pretrained(model_id)
+        model_id = config.base_model_name_or_path
+    else:
+        config = LoraConfig(
+            r=8, 
+            lora_alpha=32, 
+            target_modules=["query_key_value"], #gpt_neox
+            lora_dropout=0.05, 
+            bias="none", 
+            task_type="CAUSAL_LM"
+        )
     #load model and tokenizer with quantization
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -78,78 +161,27 @@ def get_model(model_id):
         device_map="auto",
         trust_remote_code=True)
     #setup lora
-    model = PeftModel.from_pretrained(model, model_id)
-    
-    return model, tokenizer
-
-def get_str2date(response:str):
-    dx = response.find("### Input:")
-    match = re.search(r'\d{4}-\d{2}-\d{2}', response[dx:])
-    date = datetime.strptime(match.group(), '%Y-%m-%d').date()
-    return date
-
-def get_response(sequence, tokenizer):
-    decoded_str = tokenizer.decode(sequence)
-    resp = decoded_str.find(RESPONSE_KEY)
-    end = decoded_str[resp:].find(END_KEY)
-    if resp == -1 and end != -1:
-        return decoded_str[: resp + end]
-    elif resp == -1 and end == -1:
-        return ''
+    if mode == 'eval':
+        model = PeftModel.from_pretrained(model, model_id)
     else:
-        return decoded_str[resp + len(RESPONSE_KEY) : resp + end]
-
-def get_str2alloc(response:str):
-    nums = re.findall(r"[-+]?(?:\d*\.*\d+)", response)
-    keys = re.findall(r'\'(.*?)\'', response)
-    alloc = {}
-    for i, k in enumerate(keys):
-        alloc[k] = nums[i]
-    return alloc
-
-def train_model(args):
-    if args.mode == 'train':   
-        model_name = "gpt2"    
-        model = AutoModelForCausalLM.from_pretrained(model_name)
-        tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side="left")
-        tokenizer.pad_token = tokenizer.eos_token
-        '''
-        model_id = "databricks/dolly-v2-3b"
-        config = LoraConfig(
-            r=8, 
-            lora_alpha=32, 
-            target_modules=["query_key_value"], #gpt_neox
-            lora_dropout=0.05, 
-            bias="none", 
-            task_type="CAUSAL_LM"
-        )
-        #load model and tokenizer with quantization
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16
-        )
-        tokenizer = AutoTokenizer.from_pretrained(model_id,
-                                                padding_side="left")
-        tokenizer.pad_token = tokenizer.eos_token
-        model = AutoModelForCausalLM.from_pretrained(
-            model_id, 
-            quantization_config=bnb_config, 
-            device_map="auto",
-            trust_remote_code=True)
-        #setup lora
         model.gradient_checkpointing_enable()
         model = prepare_model_for_kbit_training(model)
         model = get_peft_model(model, config)
-        '''
-    else:
-        model_name = "gpt2"    
-        model = AutoModelForCausalLM.from_pretrained(args.mhub)
-        tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side="left")
-        tokenizer.pad_token = tokenizer.eos_token
 
-        # model, tokenizer = get_model(args.mhub)
+    return model, tokenizer
+
+
+def train_model(args):
+    if args.mode == 'train':
+        if args.modeltype == 'small':
+            model, tokenizer = get_slm_model("gpt2")
+        else:
+            model, tokenizer = get_peft_model("databricks/dolly-v2-3b", mode='train')
+    else:
+        if args.modeltype == 'small':
+            model, tokenizer = get_slm_model(args.mhub)
+        else:
+            model, tokenizer = get_peft_model(args.mhub)
         model.eval()
 
     #get data
@@ -170,7 +202,7 @@ def train_model(args):
         # auto_find_batch_size=True,
         per_device_train_batch_size=MICRO_BATCH_SIZE,
         gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-        num_train_epochs=150,
+        num_train_epochs=100,
         learning_rate=2e-5,
         fp16=True,
         save_total_limit=4,
@@ -245,11 +277,13 @@ def metric_forecast_task(all_targets, all_preds):
     print("MSE: ", mean_squared_error(atgt, apred))
 
 def get_parser(raw_args=None):
-    parser = ArgumentParser(description="model")
+    parser = ArgumentParser(description="train model")
     parser.add_argument('--reload', action="store_true",
                         help='to reload checkpoint')
     parser.add_argument('--mode', type=str, default='eval',
-                        help='train or eval')    
+                        help='train or eval')   
+    parser.add_argument('--modeltype', type=str, default='small',
+                        help='small or large')   
     parser.add_argument('-d', '--dhub', type=str,
                         default='achang/stocks_one_nvda', help='get from hub folder name for task dataset')
     parser.add_argument('-m', '--mhub', type=str,

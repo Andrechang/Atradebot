@@ -110,7 +110,7 @@ class FinForecastStrategy:
         self.days_interval = delta.days/len(self.cash) #rebalance 4 times
         self.data = data['Adj Close']
 
-        self.model, self.tokenizer = fin_train.get_model(model_id)
+        self.model, self.tokenizer = fin_train.get_peft_model(model_id)
         self.model.to(device)
 
     def model_run(self, date, num_news=5):

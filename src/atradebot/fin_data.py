@@ -253,7 +253,7 @@ def generate_onestock_task(data, num_news = 3, portifolio_scenarios = 10, cash =
                     #generate output based on allocation
                     file_data.append({
                         'instruction': f"I have {stocks_own} {stock_id} stocks and {cash} cash to invest. \
-                            Given the recent news, should I buy, sell or hold {stock_id} stocks ? ", 
+                            {stock_id} price now is {stock_price} and given the recent news, should I buy, sell or hold {stock_id} stocks ? ", 
                         'input':f"News from {sample['date']}, {txt}", 
                         'output':f"{r_alloc}"})
             prev_date = sample['date']
@@ -269,14 +269,16 @@ def generate_onestock_task(data, num_news = 3, portifolio_scenarios = 10, cash =
 def get_arg(raw_args=None):
     parser = ArgumentParser(description="parameters")
     parser.add_argument('-m', '--mode', type=str,
-                        default='forecast', help='Create dataset for task modes: forecast | allocation ')
+                        default='', help='Create dataset for task modes: forecast | allocation ')
     parser.add_argument('-t', '--thub', type=str,
                         default='', help='push to hub folder name for task dataset')
     parser.add_argument('-r', '--rhub', type=str,
-                        default='stocks_grouped', help='push to hub folder name for raw news data')
+                        default='', help='push to hub folder name for raw news data')
     parser.add_argument('--start_date', type=str, default="2022-08-31", help='start date for trading analysis')
     parser.add_argument('--end_date', type=str, default="2023-06-20", help='end data for trading analysis')
     parser.add_argument('--stocks', type=str, default="AAPL AMZN MSFT NVDA TSLA", help='stocks to analize')
+    parser.add_argument('--datasrc', type=str, default="finhub", help='data src finhub or google')
+
     args = parser.parse_args(raw_args)
     return args
 
@@ -288,9 +290,15 @@ if __name__ == "__main__":
         sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
         stocks = sp500.Symbol.to_list()
 
+
+    dataset = load_dataset('achang/stock_nvda')
+    data_task = generate_onestock_task(dataset)
+    data_task.push_to_hub('achang/stocks_one_nvda')
+    exit(1)
+
     #collect news data
     dataset = gen_news_dataset(stocks, args.start_date, args.end_date, 
-                                sample_mode='sp500', news_source='finhub', num_news=20)
+                                sample_mode='sp500', news_source=args.datasrc, num_news=20)
     if args.rhub != '': #save raw news data
         dataset.push_to_hub(args.rhub)
 
