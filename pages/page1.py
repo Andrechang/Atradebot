@@ -44,7 +44,7 @@ with st.form("submit"):
     st.write(f'Collect train data from {eval_start_date} to {eval_end_date}')
 
     stocks = st.text_input('Enter list of stocks ids separated by comma: ', 'AAPL,ABBV,AMZN,MSFT,NVDA,TSLA')
-
+    stocks = stocks.replace(' ','')
     stocks = stocks.split(',')
     stocks += ['SPY']
 

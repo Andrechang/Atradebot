@@ -8,16 +8,17 @@ import matplotlib.pyplot as plt
 from atradebot import strategies
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from atradebot import utils
 
 def get_args(raw_args=None):
     parser = ArgumentParser(description="parameters")
-    parser.add_argument('--mode', type=str, default='one_stock', help='Modes: SimpleStrategy, FinForecastStrategy, FinOneStockStrategy')
+    parser.add_argument('--mode', type=str, default='SimpleStrategy', help='Modes: SimpleStrategy, FinForecastStrategy, FinOneStockStrategy')
     parser.add_argument('-m', '--mhub', type=str, default='achang/fin_gpt2_one_nvda', help='get from hub folder model')
     parser.add_argument('--init_capital', type=int, default=10000, help='initial capital')
-    parser.add_argument('--trainstart_date', type=str, default="2019-01-31", help='train data start date')
-    parser.add_argument('--evalstart_date', type=str, default="2022-01-31", help='eval start date for trading analysis')
-    parser.add_argument('--evalend_date', type=str, default="2023-05-20", help='eval end data for trading analysis')
-    parser.add_argument('--stocks', type=str, default="NVDA", help='stocks to analize')
+    parser.add_argument('--trainstart_date', type=str, default="2022-09-05", help='train data start date')
+    parser.add_argument('--evalstart_date', type=str, default="2023-04-05", help='eval start date for trading analysis')
+    parser.add_argument('--evalend_date', type=str, default="2023-08-13", help='eval end data for trading analysis')
+    parser.add_argument('--stocks', type=str, default="AAPL, NVDA", help='stocks to analize')
 
     args = parser.parse_args(raw_args)
     return args
@@ -140,6 +141,10 @@ def main(
 
     # Create a portfolio backtester instance
     backtester = PortfolioBacktester(initial_capital=init_capital, data=data, stocks=stocks, start_date=evalstart_date)
+    
+    stocks_s = stocks
+    if 'SPY' in stocks:
+        stocks_s = stocks.remove('SPY')
 
     if mode == 'SimpleStrategy':
         strategy = strategies.SimpleStrategy(evalstart_date, evalend_date, data, stocks, init_capital)
@@ -175,16 +180,17 @@ if __name__ == "__main__":
     print('train start date:', args.trainstart_date)
     print('eval start date for analysis:', args.evalstart_date)
     print('eval end data for analysis:', args.evalend_date)
-    stocks_s = args.stocks.split()
+    stocks_s = args.stocks.replace(' ','')
+    stocks_s = stocks_s.split(',')
     stocks = stocks_s + ['SPY'] #add spy for comparison
     print('Selected stocks:', stocks_s)
     print('Extended selected stocks:', stocks)
     print('Initial capital:', args.init_capital)
     print('Model path:', args.mhub)
 
-    trainstart_date = datetime.strptime(args.trainstart_date, format)
-    evalstart_date = datetime.strptime(args.evalstart_date, format)
-    evalend_date = datetime.strptime(args.evalend_date, format)
+    trainstart_date = datetime.strptime(args.trainstart_date, utils.DATE_FORMAT).date()
+    evalstart_date = datetime.strptime(args.evalstart_date, utils.DATE_FORMAT).date()
+    evalend_date = datetime.strptime(args.evalend_date, utils.DATE_FORMAT).date()
     
     plt, backtester, portfolio_value, data = main(trainstart_date, 
                                                 evalstart_date, 
