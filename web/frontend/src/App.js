@@ -34,12 +34,6 @@ function App() {
           <Route path="/competing" element={<Competing/>} />
           <Route path="/rewards" element={<Rewards/>} />
           <Route path="/paper" element={<PaperTrading/>} />
-
-
-
-
-
-
         </Routes>
       </BrowserRouter>
     </div>
