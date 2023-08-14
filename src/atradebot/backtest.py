@@ -12,8 +12,8 @@ from atradebot import utils
 
 def get_args(raw_args=None):
     parser = ArgumentParser(description="parameters")
-    parser.add_argument('--mode', type=str, default='SimpleStrategy', help='Modes: SimpleStrategy, FinForecastStrategy, FinOneStockStrategy')
-    parser.add_argument('-m', '--mhub', type=str, default='achang/fin_gpt2_one_nvda', help='get from hub folder model')
+    parser.add_argument('--mode', type=str, default='FinForecastStrategy', help='Modes: SimpleStrategy, FinForecastStrategy, FinOneStockStrategy')
+    parser.add_argument('-m', '--mhub', type=str, default='achang/fin_forecast_0', help='get from hub folder model')
     parser.add_argument('--init_capital', type=int, default=10000, help='initial capital')
     parser.add_argument('--trainstart_date', type=str, default="2022-09-05", help='train data start date')
     parser.add_argument('--evalstart_date', type=str, default="2023-04-05", help='eval start date for trading analysis')
@@ -142,9 +142,9 @@ def main(
     # Create a portfolio backtester instance
     backtester = PortfolioBacktester(initial_capital=init_capital, data=data, stocks=stocks, start_date=evalstart_date)
     
-    stocks_s = stocks
+    stocks_s = stocks.copy()
     if 'SPY' in stocks:
-        stocks_s = stocks.remove('SPY')
+        stocks_s.remove('SPY')
 
     if mode == 'SimpleStrategy':
         strategy = strategies.SimpleStrategy(evalstart_date, evalend_date, data, stocks, init_capital)

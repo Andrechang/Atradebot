@@ -125,7 +125,7 @@ def get_slm_model(model_name):
     tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer
 
-def get_peft_model(model_id, mode='eval'):
+def get_peft_model(model_name, mode='eval'):
     """get a model with peft 
     :param model_id: id of model from huggingface
     :type model_id: str
@@ -135,7 +135,7 @@ def get_peft_model(model_id, mode='eval'):
     :rtype: peft ModelForCausalLM, Tokenizer
     """    
     if mode == 'eval':
-        config = PeftConfig.from_pretrained(model_id)
+        config = PeftConfig.from_pretrained(model_name)
         model_id = config.base_model_name_or_path
     else:
         config = LoraConfig(
@@ -162,7 +162,7 @@ def get_peft_model(model_id, mode='eval'):
         trust_remote_code=True)
     #setup lora
     if mode == 'eval':
-        model = PeftModel.from_pretrained(model, model_id)
+        model = PeftModel.from_pretrained(model, model_name)
     else:
         model.gradient_checkpointing_enable()
         model = prepare_model_for_kbit_training(model)

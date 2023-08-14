@@ -85,7 +85,7 @@ class SimpleStrategy:
 
 
 class FinForecastStrategy:
-    def __init__(self, start_date:str, end_date:str, data, stocks, cash=10000, model_id="fin_forecast_0"):
+    def __init__(self, start_date, end_date, data, stocks, cash=10000, model_id="fin_forecast_0"):
         """
         data: stock_forecast_0 generated from fin_data.generate_forecast_task
         model: trained using fin_train.py
@@ -97,9 +97,9 @@ class FinForecastStrategy:
                 ## Response: forecast percentage change for 1mon, 5mon, 1 yr
 
         :param start_date: date start to backtest in format yyyy-mm-dd
-        :type start_date: str
+        :type start_date: datetime.date
         :param end_date: date end to backtest in format yyyy-mm-dd
-        :type end_date: str
+        :type end_date: datetime.date
         :param data: pandas dataframe from yfinance
         :type data: pandas dataframe
         :param stocks: list of stocks to backtest
@@ -109,8 +109,7 @@ class FinForecastStrategy:
         :param model_id: huggingface model id to use, defaults to "fin_forecast_0"
         :type model_id: str, optional
         """        
-        start_date = datetime.strptime(start_date, DATE_FORMAT).date()
-        end_date = datetime.strptime(end_date, DATE_FORMAT).date()
+
         self.prev_date = start_date #previous date for rebalance
         self.stocks = {i: 0 for i in stocks}
         
