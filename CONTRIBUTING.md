@@ -13,7 +13,7 @@ Steps to do to contribute:
    - Add documentation in [docs](https://github.com/Andrechang/Atradebot/tree/main/docs)
         
 4. Write comments.
-For each function add the comments according to [shpinx](https://www.sphinx-doc.org/en/master/) documentation format.
+For each function add the comments according to [sphinx](https://www.sphinx-doc.org/en/master/) documentation format.
 Check how documentation of additions will look like by running:
 ```
 cd docs/
