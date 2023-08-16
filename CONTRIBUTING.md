@@ -17,7 +17,7 @@ For each function add the comments according to [shpinx](https://www.sphinx-doc.
 Check how documentation of additions will look like by running:
 ```
 cd docs/
-sphinx
+sphinx-build -b html
 ```
 
 5. Write commit and pull request description.
