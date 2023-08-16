@@ -1,14 +1,13 @@
 import React from 'react';
-import './Home.css';
+import './Home2.css';
 import { Link } from 'react-router-dom';
 
 
-export default function Home() {
-  
+export default function Home2() {
   return (
-    <div className=''>   
-     <div className='body'>
-      <div className="box">
+    <div className='home'>
+      <div className="body">
+        <div className="box">
         <h2 className='home-h2'>Welcome To</h2>
         <h1 className='home-h1'>WISEBUCK.AI</h1>
         <p className='home-h31'><i>The personal assistant for your</i></p>
@@ -19,9 +18,9 @@ export default function Home() {
         <Link to="/login" className="home-btn2">
               Login
             </Link>
+        </div>
       </div>
-    </div>
-    <div className="mission-box">
+      <div className="mission-box">
         <h1 className='mission-title'>OUR MISSION</h1>
         <h3 className='mission-header'>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Vero architecto, aspernatur tempore obcaecati assumenda et! Adipisci repellat voluptatem aperiam deserunt.</h3>
         <div className="mission-container">
@@ -39,61 +38,52 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <div className="row featurette row1">
-      <div className="col-md-7 order-md-2">
-        <h2 className="featurette-heading fw-normal lh-1 row1-title">AI INTEGRATION </h2> 
+      <div className=" row1">
+      <div className="">
+        <h2 className=" row1-title">AI INTEGRATION </h2> 
         <span className=" row1-header">WISEBUCK CHATBOT</span>
-        <p className="lead row1-para">Another featurette? Of course. More placeholder content here to give you an idea of how this layout would work with some actual real-world content in place.</p>
+        <p className=" row1-para">Another featurette? Of course. More placeholder content here to give you an idea of how this layout would work with some actual real-world content in place.</p>
         <Link to="/CHATBOT" className="row1-btn">
         EXPLORE CHATBOT
             </Link>
       </div>
-      <div className="col-md-5 order-md-1">
-        
-      </div>
     </div>
-    <div className="row featurette row2">
-      <div className="col-md-5">
-        <h2 className="featurette-heading fw-normal lh-1 row2-title">PEER TO PEER COMPETITON</h2>
+    <div className=" row2">
+      <div className="">
+        <h2 className=" row2-title">PEER TO PEER COMPETITON</h2>
         <span className="row2-header">INVESTMENT</span><br />
         <span className="row2-header">CHALLENGE</span>
-        <p className="lead row2-para">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illo accusantium quas modi facere repudiandae labore iste itaque eligendi, placeat quis.</p>
+        <p className=" row2-para">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illo accusantium quas modi facere repudiandae labore iste itaque eligendi, placeat quis.</p>
         <Link to="/competing" className="row2-btn">
         EXPLORE CHALLENGE
             </Link>
       </div>
-      <div className="col-md-7">
-        
-      </div>
     </div>
 
-    <div className="row featurette row1">
-      <div className="col-md-7 order-md-2">
-        <h2 className="featurette-heading fw-normal lh-1 row1-title">LOREM ISPUM </h2> 
-        <span className=" row1-header">REWARDS BASED INVESTING</span>
-        <p className="lead row1-para">Another featurette? Of course. More placeholder content here to give you an idea of how this layout would work with some actual real-world content in place.</p>
+    <div className="row1">
+      <div className="">
+        <h2 className=" row1-title2">REWARDS</h2> 
+        <span className=" row1-header2">REWARDS BASED INVESTING</span>
+
+        <p className=" row1-para2">Another featurette? Of course. More placeholder content here to give you an idea of how this layout would work with some actual real-world content in place.</p>
         <Link to="/rewards" className="row1-btn">
         EXPLORE REWARDS
             </Link>
       </div>
-      <div className="col-md-5 order-md-1">
-        
-      </div>
     </div>
-    <div className="row featurette row2">
-      <div className="col-md-5">
-        <h2 className="featurette-heading fw-normal lh-1 row2-title">LOREM ISPUM</h2>
+    <div className="row2">
+      <div className="">
+        <h2 className="row2-title">LOREM ISPUM</h2>
         <span className="row2-header">PAPER TRADING</span>
-        <p className="lead row2-para">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illo accusantium quas modi facere repudiandae labore iste itaque eligendi, placeat quis.</p>
+        <p className=" row2-para">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illo accusantium quas modi facere repudiandae labore iste itaque eligendi, placeat quis.</p>
         <Link to="/paper" className="row2-btn">
         EXPLORE TRADING
             </Link>
       </div>
-      <div className="col-md-7">
-      </div>
+     
     </div>
-<div className="footer">
-  <div className="left">
+    {/* <div className="footer"> */}
+  {/* <div className="left">
     <small>LoGo</small> <h3 className='left-h3'>WISEBUCK.AI</h3>
     <p className='left-p'>@WiseBuck.AI,2023</p>
     <img src="/images/line.png" alt="" className='line'/>
@@ -124,7 +114,8 @@ export default function Home() {
       <Link to="/contact" className='footer-contact'>CONTACT US</Link>
     </div>
   </div>
-</div>
+</div> */}
+
     </div>
   )
 }
