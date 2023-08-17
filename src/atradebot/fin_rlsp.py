@@ -3,30 +3,12 @@
 
 
 import torch
-from transformers import GPT2Tokenizer
 from argparse import ArgumentParser
-import os
-import sys
-import time
-from pathlib import Path
-import shutil
-
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-import transformers
 from datasets import load_dataset
-from peft import PeftModel, PeftConfig, get_peft_model, LoraConfig, prepare_model_for_kbit_training, LoraConfig, get_peft_model
 from tqdm import tqdm
-import numpy as np
 from argparse import ArgumentParser
-from torch.utils.data.dataloader import DataLoader
-from sklearn.metrics import mean_squared_error 
-import re
-from datetime import date, datetime
-from dateutil.relativedelta import relativedelta
-from atradebot import main, fin_train, backtest, utils
-import copy
-import pandas as pd
+from atradebot import fin_train, utils
 from trl import AutoModelForCausalLMWithValueHead, PPOConfig, PPOTrainer
 from atradebot import fin_train
 

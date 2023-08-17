@@ -6,6 +6,12 @@ import yaml
 import yfinance as yf
 import re
 import random
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.text_splitter import CharacterTextSplitter
+
+
+TextEmbeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 DATE_FORMAT = "%Y-%m-%d"
 
@@ -33,14 +39,16 @@ def pd_append(df, dict_d):
 
 
 def get_price(stock):
+    """get current price of stock
+
+    :param stock: stock id
+    :type stock: str
+    :return: current price
+    :rtype: float
+    """    
     ticker = yf.Ticker(stock).info
     return ticker['regularMarketOpen']
 
-
-# holdings: Name, Qnt, UCost (unit cost), BaseCost, Price (current price), Value (current Value), LongGain (Qnt), ShortGain (Qnt)
-# activity: Name, type (buy/sell), TB (time bought), Qnt, Proceed
-# balance: Time, Cash, Stock, Total
-# news: Time, Name, Text, Score, Link
 def get_config(cfg_file):
     with open(cfg_file, 'r') as ymlfile:
         cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
@@ -48,6 +56,17 @@ def get_config(cfg_file):
 
 
 def get_price_date(date, end_date, stock):
+    """get price of stock at date and end_date
+
+    :param date: start date to get price 
+    :type date: datetime.date
+    :param end_date: end date to get price
+    :type end_date: datetime.date
+    :param stock: stock id
+    :type stock: str
+    :return: dataframe of stock data from date to end_date
+    :rtype: pandas.DataFrame
+    """    
     data = yf.Ticker(stock)
     hdata = data.history(start=date.strftime(DATE_FORMAT),  end=end_date.strftime(DATE_FORMAT))
     return hdata
@@ -127,7 +146,17 @@ def get_forecast(stock, date, add_days=[21, 5*21, 12*21]):
 
 
 def get_mentionedtext(keyword, text, context_length=512):
-    # Define the number of characters to extract before and after the keyword
+    """get text around keyword given the number of characters to extract before and after the keyword
+
+    :param keyword: keyword to search for in text
+    :type keyword: str
+    :param text: text to search for keyword
+    :type text: str
+    :param context_length: number of words before and after the keyword, defaults to 512
+    :type context_length: int, optional
+    :return: collected text around keyword
+    :rtype: str
+    """    
     delimiter = '.'
     # Create a regex pattern to match the keyword with surrounding text
     # pattern = r"(.{0,%d})(%s)(.{0,%d})" % (context_length, re.escape(keyword), context_length)
@@ -142,6 +171,24 @@ def get_mentionedtext(keyword, text, context_length=512):
         if len(f_text) > context_length:
             break
     return f_text
+
+def get_doc2vectext(query, intexts):
+    """get relevant text from intexts based on query using vector search
+
+    :param query: input to search for
+    :type query: str
+    :param intexts: context to search in
+    :type intexts: str
+    :return: relevant text from intexts
+    :rtype: str
+    """    
+    text_splitter = CharacterTextSplitter(separator=' ', chunk_size=128, chunk_overlap=16)
+    texts = text_splitter.split_text(intexts)
+    vector_store = FAISS.from_texts(texts, TextEmbeddings)
+    retriever = vector_store.as_retriever(search_kwargs={"k": 4})
+    doc = retriever.get_relevant_documents(query)
+    dstr = ' '.join([d.page_content for d in doc])
+    return dstr
 
 def gen_rand_alloc(n_stock=5):
 # Generate random percentages that sum up to 100

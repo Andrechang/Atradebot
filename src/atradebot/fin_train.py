@@ -4,25 +4,18 @@
 # https://colab.research.google.com/drive/1n5U13L0Bzhs32QO_bls5jwuZR62GPSwE?usp=sharing
 
 import os
-import sys
-import time
-from pathlib import Path
-import shutil
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import transformers
 from datasets import load_dataset
-from peft import PeftModel, PeftConfig, get_peft_model, LoraConfig, LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from peft import PeftModel, PeftConfig, get_peft_model, LoraConfig, LoraConfig, prepare_model_for_kbit_training
 from tqdm import tqdm
-import numpy as np
 from argparse import ArgumentParser
 from torch.utils.data.dataloader import DataLoader
 from sklearn.metrics import mean_squared_error 
 import re
-from datetime import date, datetime
-from dateutil.relativedelta import relativedelta
-from atradebot import main, news_utils
+from datetime import datetime
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -125,7 +118,7 @@ def get_slm_model(model_name):
     tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer
 
-def get_peft_model(model_name, mode='eval'):
+def get_lrg_model(model_name, mode='eval'):
     """get a model with peft 
     :param model_id: id of model from huggingface
     :type model_id: str
@@ -136,7 +129,8 @@ def get_peft_model(model_name, mode='eval'):
     """    
     if mode == 'eval':
         config = PeftConfig.from_pretrained(model_name)
-        model_id = config.base_model_name_or_path
+        adapter_name = model_name
+        model_name = config.base_model_name_or_path
     else:
         config = LoraConfig(
             r=8, 
@@ -153,16 +147,16 @@ def get_peft_model(model_name, mode='eval'):
         bnb_4bit_quant_type="nf4",
         bnb_4bit_compute_dtype=torch.bfloat16
     )
-    tokenizer = AutoTokenizer.from_pretrained(model_id, padding_side="left")
+    tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side="left")
     tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(
-        model_id, 
+        model_name, 
         quantization_config=bnb_config, 
         device_map="auto",
         trust_remote_code=True)
     #setup lora
     if mode == 'eval':
-        model = PeftModel.from_pretrained(model, model_name)
+        model = PeftModel.from_pretrained(model, adapter_name)
     else:
         model.gradient_checkpointing_enable()
         model = prepare_model_for_kbit_training(model)
@@ -176,12 +170,12 @@ def train_model(args):
         if args.modeltype == 'small':
             model, tokenizer = get_slm_model("gpt2")
         else:
-            model, tokenizer = get_peft_model("databricks/dolly-v2-3b", mode='train')
+            model, tokenizer = get_lrg_model("databricks/dolly-v2-7b", mode='train')
     else:
         if args.modeltype == 'small':
             model, tokenizer = get_slm_model(args.mhub)
         else:
-            model, tokenizer = get_peft_model(args.mhub)
+            model, tokenizer = get_lrg_model(args.mhub)
         model.eval()
 
     #get data
@@ -202,7 +196,7 @@ def train_model(args):
         # auto_find_batch_size=True,
         per_device_train_batch_size=MICRO_BATCH_SIZE,
         gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-        num_train_epochs=100,
+        num_train_epochs=50,
         learning_rate=2e-5,
         fp16=True,
         save_total_limit=4,
@@ -285,9 +279,9 @@ def get_parser(raw_args=None):
     parser.add_argument('--modeltype', type=str, default='small',
                         help='small or large')   
     parser.add_argument('-d', '--dhub', type=str,
-                        default='achang/stocks_one_nvda', help='get from hub folder name for task dataset')
+                        default='achang/stocks_one_nvda_v2', help='get from hub folder name for task dataset')
     parser.add_argument('-m', '--mhub', type=str,
-                        default='achang/fin_gpt2_one_nvda', help='push to hub folder model')
+                        default='achang/fin_falcon7b_one_nvda_v2', help='push to hub folder model')
     args = parser.parse_args(raw_args)
     return args
 

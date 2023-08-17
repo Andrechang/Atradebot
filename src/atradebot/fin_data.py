@@ -211,7 +211,9 @@ def generate_onestock_task(data, num_news = 3, portifolio_scenarios = 10, cash =
     """    
     news_date = []
     stock_id = data['train'][0]['stock'] #analysis of one stock only
+    corp_info = yf.Ticker(stock_id).info
     prev_date = data['train'][0]['date']
+    invest_interval = 21 #check invest every week days
     file_data = []
     for sample in data['train']:
         if sample['date'].date() == prev_date.date(): 
@@ -237,18 +239,18 @@ def generate_onestock_task(data, num_news = 3, portifolio_scenarios = 10, cash =
                     scenarios.add((stocks_own, stocks_buy, stocks_sell))
 
                     #get forecast and apply simple buy/sell strategy
-                    forecast = utils.get_forecast(stock_id, sample['date'], add_days=[21]) #forecast [1mon]
-                    if forecast[0] > 1.2:
+                    forecast = utils.get_forecast(stock_id, sample['date'], add_days=[invest_interval]) #forecast [1mon]
+                    if forecast[0] > 1:
                         r_alloc = f"buy {stocks_buy} {stock_id} stocks"
-                    elif forecast[0] < 0.8: 
+                    elif forecast[0] < 1: 
                         r_alloc = f"sell {stocks_sell} {stock_id} stocks"
                     else:
                         r_alloc = 'hold'
                     
                     txt = '' # collect only parts of news that references the stock
-                    for n in news_pick:
-                        txt += utils.get_mentionedtext(stock_id, n['text'], context_length=128)
-                    # TODO use embeding doc2vec to get relevant part of news
+                    query = f"{stock_id} {corp_info['longName']}"
+                    for new in news_pick:
+                        txt += utils.get_doc2vectext(query, new['text'])
             
                     #generate output based on allocation
                     file_data.append({
@@ -290,11 +292,11 @@ if __name__ == "__main__":
         sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
         stocks = sp500.Symbol.to_list()
 
-
     dataset = load_dataset('achang/stock_nvda')
     data_task = generate_onestock_task(dataset)
-    data_task.push_to_hub('achang/stocks_one_nvda')
+    data_task.push_to_hub('achang/stocks_one_nvda_v2')
     exit(1)
+
 
     #collect news data
     dataset = gen_news_dataset(stocks, args.start_date, args.end_date, 

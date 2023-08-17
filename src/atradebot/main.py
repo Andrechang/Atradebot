@@ -42,6 +42,10 @@ class TradingBot:
     # PROFILE SAVING===================================================================================================
     
     def load_profile(self):
+        # holdings: Name, Qnt, UCost (unit cost), BaseCost, Price (current price), Value (current Value), LongGain (Qnt), ShortGain (Qnt)
+        # activity: Name, type (buy/sell), TB (time bought), Qnt, Proceed
+        # balance: Time, Cash, Stock, Total
+        # news: Time, Name, Text, Score, Link
         if not os.path.isfile(self.config['SAVE_FILE']): #create a new profile
             self.holdings = pd.DataFrame(columns=['Name','Qnt','UCost','BaseCost','Price','Value','LongGain','ShortGain']) 
             for stock in self.config['STOCKS2CHECK']:

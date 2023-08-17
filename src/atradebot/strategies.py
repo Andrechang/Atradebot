@@ -4,7 +4,6 @@
 # inputs: date, portfolio
 # outputs: dict of allocations for each stock
 
-from datetime import date, datetime
 from pypfopt import risk_models, expected_returns
 from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
 from pypfopt.efficient_frontier import EfficientFrontier
@@ -13,6 +12,7 @@ import torch
 import numpy as np
 from atradebot.utils import DATE_FORMAT
 from atradebot import fin_train, news_utils, utils
+import yfinance as yf
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -122,7 +122,7 @@ class FinForecastStrategy:
         self.days_interval = delta.days/len(self.cash) #rebalance 4 times
         self.data = data['Adj Close']
 
-        self.model, self.tokenizer = fin_train.get_peft_model(model_id)
+        self.model, self.tokenizer = fin_train.get_lrg_model(model_id)
         self.model.to(device)
 
     def model_run(self, date, num_news=5):
@@ -246,7 +246,7 @@ class FinForecastStrategy:
 
 
 class FinOneStockStrategy:
-    def __init__(self, start_date:str, end_date:str, data, stocks, cash=10000, model_id="fin_gpt2_one_nvda", news_src="google"):
+    def __init__(self, start_date, end_date, data, stocks, cash=10000, model_id="fin_gpt2_one_nvda", news_src="google"):
         """
         data: stocks_one_nvda generated from fin_data.generate_onestock_task
         model: trained using fin_train.py
@@ -258,9 +258,9 @@ class FinOneStockStrategy:
                 ## Response: allocation suggestion
 
         :param start_date: date start to backtest in format yyyy-mm-dd
-        :type start_date: str
+        :type start_date: datetime.date
         :param end_date: date end to backtest in format yyyy-mm-dd
-        :type end_date: str
+        :type end_date: datetime.date
         :param data: pandas dataframe from yfinance
         :type data: pandas dataframe
         :param stocks: list of stocks to backtest
@@ -270,8 +270,6 @@ class FinOneStockStrategy:
         :param model_id: huggingface model id to use, defaults to "fin_forecast_0"
         :type model_id: str, optional
         """        
-        start_date = datetime.strptime(start_date, DATE_FORMAT).date()
-        end_date = datetime.strptime(end_date, DATE_FORMAT).date()
         self.prev_date = start_date #previous date for rebalance
         self.stocks = {i: 0 for i in stocks}
         
@@ -284,17 +282,20 @@ class FinOneStockStrategy:
         self.days_interval = delta.days/len(self.cash) #rebalance 4 times
         self.data = data['Adj Close']
 
-        self.model, self.tokenizer = fin_train.get_slm_model(model_id)
+        # self.model, self.tokenizer = fin_train.get_slm_model(model_id)
+        self.model, self.tokenizer = fin_train.get_lrg_model(model_id)
         self.model.to(device)
         self.news_src = news_src
 
-    def model_run(self, date, portfolio, num_news=3, amount_invest=10000):
+    def model_run(self, date, portfolio, prices, num_news=3, amount_invest=10000):
         """get news before date and forecast using model
 
         :param date: date = pd.Timestamp("2021-07-22")
         :type date: pandas.Timestamp
         :param portfolio: current portfolio (check backtest.py for format)
         :type portfolio: pandas.DataFrame dict{stock: number of shares}
+        :param prices: list of stock prices
+        :type prices: pandas.Series
         :param num_news: number of news to get, defaults to 5
         :type num_news: int, optional
         :param amount_invest: amount to invest
@@ -307,6 +308,8 @@ class FinOneStockStrategy:
         start = utils.business_days(end, -5) # also get news 5 days before
         all_stocks = {}
         for stock in self.stocks:
+            corp_info = yf.Ticker(stock).info
+            stock_price = prices[stock]
             #get news
             news = news_utils.get_news(stock, [start, end], num_news, self.news_src)
             if not news:
@@ -315,18 +318,19 @@ class FinOneStockStrategy:
 
             #generate prompt
             txt = '' # collect only parts of news that references the stock
+            query = f"{stock} {corp_info['longName']} {corp_info['longBusinessSummary']}"
             for new in news:
-                txt += utils.get_mentionedtext(stock, new['text'], context_length=128)
-                # TODO use embeding doc2vec to get relevant part of news
+                txt += utils.get_doc2vectext(query, new['text'])
 
             #generate output based on allocation
             in_dict = {
-                'instruction':f"I have {amount_invest} cash to invest. Given the recent news, should I buy, sell or hold {stock} stocks ? ",
+                'instruction':f"I have {amount_invest} cash to invest. \
+                {stock} price now is {stock_price} and given the recent news, should I buy, sell or hold {stock} stocks ? ",
                 'input':f"News from {end}, {txt}", 
                 }
             if portfolio[stock][date] > 0:
                 in_dict['instruction'] = f"I have {portfolio[stock][date]} {stock} stocks and {amount_invest} cash to invest. \
-                    Given the recent news, should I buy, sell or hold {stock} stocks ? "
+                    {stock} price now is {stock_price} and given the recent news, should I buy, sell or hold {stock} stocks ? "
             prompt = fin_train.generate_prompt(in_dict, mode='eval')
             
             #run model
@@ -371,7 +375,7 @@ class FinOneStockStrategy:
         :return: allocation for each stock
         :rtype: dict{stock: number to buy/sell}
         """             
-        allocation = self.model_run(date, portfolio, amount_invest)
+        allocation = self.model_run(date, portfolio, prices, num_news=3, amount_invest=amount_invest)
         for stock in allocation:
             max_stocks = amount_invest/prices[stock]
             allocation[stock] = min(allocation[stock], max_stocks)
