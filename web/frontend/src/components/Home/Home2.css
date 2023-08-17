@@ -91,9 +91,9 @@
   .mission-container{
     display: flex;
     flex-direction: row;
+    align-items: center;
     justify-content: center;
     text-align: center;
-    align-items: center;
     width: 70%;
     margin-bottom: 3.0rem;
   
@@ -113,33 +113,44 @@
 
   .row1{
     background-color: #003260;
-    height: 35rem;
+    height: 40rem;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items:flex-end;
+    flex-shrink: 0;
+    
   }
   .row1-title{
     color: rgba(228, 156, 49, 1);
-    margin-top: 7.0rem;
-    margin-bottom: 2.0rem;
+    /* margin-top: 7.0rem;
+    margin-bottom: 2.0rem; */
     font-size: 4rem;
     position: absolute;
-right: 33%;
+/* right: 31%; */
+top: 3rem;
+right: 35rem;
+
+
   }
   .row1-header{
     font-size: 5rem;
     color: #ffffff;
     letter-spacing: 0.3rem;
     position: absolute;
-    right: 15%;
-    top: 25%;
+    /* right: 15%;
+    top: 25%; */
+top: 8rem;
+right: 10rem;
 
   }
   .row1-title2{
     color: rgba(228, 156, 49, 1);
-    margin-top: 7.0rem;
-    margin-bottom: 2.0rem;
     font-size: 3.5rem;
     position: absolute;
-right: 36%;
+top: 3rem;
+right: 54rem;
   }
   .row1-header2{
     font-size: 4rem;
@@ -147,18 +158,22 @@ right: 36%;
     letter-spacing: 0.3rem;
     position: absolute;
     right: 5%;
-    top: 27%;
+    top: 20%;
+   
+
 
   }
 
   .row1-para{
     color: #ffffff;
     font-family:Arial, Helvetica, sans-serif;
-    position: absolute;
-    right: 22%;
-    top: 45%;
+   
     max-width: 30%;
     font-size: 1.8rem;
+    position: absolute;
+    top: 15rem;
+    right: 21rem;
+
 
   }
   .row1-para2{
@@ -166,14 +181,40 @@ right: 36%;
     font-family:Arial, Helvetica, sans-serif;
     position: absolute;
     right: 26rem;
-    top: 18rem;
+    top: 15rem;
     max-width: 30%;
         font-size: 1.8rem;
 
 
+
   }
   .row1-btn{
-    width: 30rem;
+    width: 32rem;
+    padding: 3rem;
+    border-radius: 0.7rem;
+      font-size: 2rem;
+      letter-spacing: 0.1rem;
+      background-color: #ffffff;
+      color: rgba(0, 50, 96, 1);
+      margin-left: 1.5rem;
+      height: 4rem;
+      display:flex;
+      justify-content: center;
+      align-items: center;
+      text-decoration: none;
+      /* position: absolute;
+      top: 27rem;
+      right:47rem; */
+      position: absolute;
+      top: 25rem;
+      right: 35rem;
+
+  }
+  .row1-btn:hover{
+  background-color: rgba(228, 156, 49, 1);
+  }
+  .row1-btn2{
+    width: 32rem;
     padding: 3rem;
     border-radius: 0.7rem;
       font-size: 2rem;
@@ -188,42 +229,56 @@ right: 36%;
       text-decoration: none;
       position: absolute;
       top: 27rem;
-      right:41rem;
-  
+      right:40rem;
+      float: right;
+
   }
-  .row1-btn:hover{
-  background-color: rgba(228, 156, 49, 1);
-  }
+  .row1-btn2:hover{
+    background-color: rgba(228, 156, 49, 1);
+    }
   
   .row2{
     background-color: #ffffff;
     height: 40rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    position: relative;
   
   }
   .row2-title{
     color: rgba(228, 49, 156, 1);
-    margin-top: 7rem;
-    margin-bottom: 2rem;
+    /* margin-top: 7rem;
+    margin-bottom: 2rem; */
     font-size: 3.5rem;
-    margin-left: 23rem;
+    /* margin-left: 23rem; */
+    position: absolute;
+    left: 30rem;
+    top: 2rem;
   }
   .row2-header{
     font-size: 4.5rem;
     color: #003260;
-    margin-left: 23rem;
     letter-spacing: 0.44rem;
+    position: absolute;
+    top: 6rem;
+    left: 30rem;
   
   }
   .row2-para{
     color: rgba(0, 0, 0, 1);
     font-family:Arial, Helvetica, sans-serif;
-    margin-left: 23rem;
     max-width: 25%;
     font-size: 1.8rem;
+    position: absolute;
+    top: 12rem;
+    left: 30rem;
   
   }
   .row2-btn{
-    width: 30rem;
+    width: 32rem;
     padding: 3rem;
     border-radius: 0.7rem;
       font-size: 2rem;
@@ -236,11 +291,63 @@ right: 36%;
       justify-content: center;
       align-items: center;
       text-decoration: none;
-      margin-left: 23rem;
+      position: absolute;
+      top: 26rem;
+      left: 28rem;
   
   
   }
   .row2-btn:hover{
+  background-color: rgba(228, 49, 156, 1);
+  color: #ffffff;
+  }
+
+  .row2-title2{
+    color: rgba(228, 49, 156, 1);
+    font-size: 3.5rem;
+    position: absolute;
+    top: 4rem;
+    left: 30rem;
+  }
+  .row2-header2{
+    font-size: 4.5rem;
+    color: #003260;
+    letter-spacing: 0.44rem;
+    position: absolute;
+    top: 9rem;
+    left: 30rem;
+  
+  }
+  .row2-para2{
+    color: rgba(0, 0, 0, 1);
+    font-family:Arial, Helvetica, sans-serif;
+    max-width: 25%;
+    font-size: 1.8rem;
+    position: absolute;
+    top: 15rem;
+    left: 30rem;
+  
+  }
+  .row2-btn2{
+    width: 32rem;
+    padding: 3rem;
+    border-radius: 0.7rem;
+      font-size: 2rem;
+      letter-spacing: 0.1rem;
+      background-color: rgba(0, 50, 96, 1);
+      color: #ffffff;
+      height: 4rem;
+      display:flex;
+      justify-content: center;
+      align-items: center;
+      text-decoration: none;
+      position: absolute;
+      top: 28rem;
+      left: 30rem;
+  
+  
+  }
+  .row2-btn2:hover{
   background-color: rgba(228, 49, 156, 1);
   color: #ffffff;
   }
@@ -348,7 +455,7 @@ right: 36%;
     color: #ffffff;
   }
 
-  @media only screen and (max-width:480px){
+  @media only screen and (max-width:600px){
 .home{
     width: 59rem;
 }
@@ -357,94 +464,136 @@ right: 36%;
 }
 .row1{
   height:45rem ;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 .row1-title{
-  margin-top: 3rem;
-  font-size: 3rem;
+  top: 3rem;
+  right: 15rem;
+  font-size: 3.1rem;
 }
 .row1-header{
-  font-size: 4.2rem;
-  top: 15%;
+  font-size: 3rem;
+  top: 8rem;
+  right: 10rem;
 }
 .row1-para{
   font-size: 2rem;
-  max-width: 60%;
+  max-width: 55%;
 top: 30%;
+right: 12rem;
 }
 .row1-btn{
   top: 30rem;
-  right: 16rem;
+  right: 14rem;
 
 }
 .row2{
   height: 45rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 .row2-title{
   font-size: 3rem;
-  margin-top: 3rem;
-  margin-left: 10rem;
+  top: 3rem;
+  left: 9rem;
 }
 .row2-header{
-  font-size: 3.5rem;
-  margin-left: 17rem;
+  font-size: 2.5rem;
+  left: 12rem;
+  top: 7rem;
 }
 .row2-para{
-  max-width: 60%;
+  max-width: 55%;
   font-size: 2rem;
-  margin-left: 18rem;
+  left: 18rem;
 }
 .row2-btn{
-  margin-left: 16rem;
+  left: 14rem;
+  top: 30rem;
 }
 .row1-title2{
-  margin-top: 3rem;
+  top: 3rem;
   font-size: 3.5rem;
+  right: 22rem;
 }
 .row1-header2{
-  font-size: 3.0rem;
+  font-size: 2.5rem;
   top: 17%;
-  right: 10%;
+  right: 13%;
 }
 .row1-para2{
   font-size: 2rem;
-  max-width: 60%;
+  max-width: 55%;
 top: 30%;
 right: 13rem;
 }
+.row1-btn2{
+  top: 30rem;
+  right: 15rem;
+}
+.row2-title2{
+  top: 3rem;
+  font-size: 4rem;
+left: 17rem;
+}
+.row2-header2{
+  font-size: 3.5rem;
+  top: 9rem;
+  left: 15rem;
+}
+.row2-para2{
+  font-size: 2rem;
+  max-width: 55%;
+left: 18rem;
+}
+.row2-btn2{
+  top: 32rem;
+  left: 17rem;
+}
   }
 
-  @media only screen and (min-width:600px){
+ @media only screen and (min-width:600px) and (max-width:768px){
     .mission-container{
       flex-direction: column;
     }
     .row1{
       height:45rem ;
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
     }
     .row1-title{
-      margin-top: 3rem;
-      font-size: 3rem;
+      top: 3rem;
+      font-size: 3.5rem;
+      right: 29%;
     }
     .row1-header{
-      font-size: 4.2rem;
-      top: 15%;
+      font-size: 3.6rem;
+      top: 16%;
+      right: 12rem;
     }
     .row1-para{
       font-size: 2rem;
-      max-width: 65%;
-    top: 30%;
+      max-width: 55%;
+    top: 32%;
+    right: 14rem;
     }
     .row1-btn{
       top: 30rem;
-      right: 20rem;
+      right: 18rem;
       font-size: 2rem;
     
     }
     .row2{
       height: 45rem;
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -452,29 +601,32 @@ right: 13rem;
     }
     .row2-title{
       font-size: 3rem;
-      margin-top: 3rem;
-      margin-left: 3.2rem;
+      top: 3rem;
+      left: 12.5rem;
     }
     .row2-header{
-      font-size: 3.5rem;
-      margin-left: 1.5rem;
+      font-size: 3.2rem;
+      left: 9.5rem;
+      top: 7rem;
     }
     .row2-para{
-      max-width: 60%;
+      max-width: 55%;
       font-size: 2rem;
-      margin-left: 15rem;
+      left: 16rem;
     }
     .row2-btn{
-      margin-left: 16rem;
+      left: 17rem;
+      top: 28rem;
     }
     .row1-title2{
-      margin-top: 3rem;
+      top:4rem;
       font-size: 3.5rem;
+      right: 25rem;
     }
     .row1-header2{
       font-size: 3.0rem;
-      top: 17%;
-      right: 10%;
+      top: 8rem;
+      right: 9rem;
     }
     .row1-para2{
       font-size: 2rem;
@@ -482,11 +634,341 @@ right: 13rem;
     top: 30%;
     right: 13rem;
     }
-  }
+    .row1-btn2{
+      top: 29rem;
+      right: 17rem;
+    }
+    .row2-title2{
+      top: 3rem;
+      font-size: 4rem;
+    left: 20rem;
+    }
+    .row2-header2{
+      font-size: 3.5rem;
+      top: 9rem;
+      left: 18rem;
+    }
+    .row2-para2{
+      font-size: 2rem;
+      max-width: 55%;
+    left: 15rem;
+    }
+    .row2-btn2{
+      top: 32rem;
+      left: 19rem;
+    }
+  } 
   
-  @media only screen and (min-width:768px){
-  }
+  @media only screen and (min-width:768px) and (max-width:992px){
 
+    .row1{
+      height:45rem ;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .row1-title{
+      top: 2.5rem;
+      font-size: 3.5rem;
+      right: 32%;
+    }
+    .row1-header{
+      font-size: 4.2rem;
+      top: 16%;
+      right: 19%;
+    }
+    .row1-para{
+      font-size: 2rem;
+      max-width: 55%;
+    top: 32%;
+    right: 22%;
+  
+    }
+    .row1-btn{
+      top: 30rem;
+      right: 25rem;
+      font-size: 2rem;
+    
+    }
+    .row2{
+      height: 45rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .row2-title{
+      font-size: 3rem;
+    top: 3rem;
+      left: 18rem;
+    }
+    .row2-header{
+      font-size: 3.2rem;
+      top: 8rem;
+      left: 15rem;
+    }
+    .row2-para{
+      max-width: 55%;
+      font-size: 2rem;
+      left: 18rem;
+      top: 13rem;
+    }
+    .row2-btn{
+      left: 23rem;
+      top: 30rem;
+    }
+    .row1-title2{
+      top: 3rem;
+      font-size: 3.5rem;
+      right: 40%;
+    }
+    .row1-header2{
+      font-size: 3.0rem;
+      top: 17%;
+      right: 19%;
+    }
+    .row1-para2{
+      font-size: 2rem;
+      max-width: 60%;
+    top: 30%;
+    right: 16rem;
+    }
+    .row1-btn2{
+      top: 29rem;
+      right: 24rem;
+    }
+    .row2-title2{
+      top: 3rem;
+      font-size: 4rem;
+    left: 25rem;
+    }
+    .row2-header2{
+      font-size: 3.5rem;
+      top: 8rem;
+      left: 23rem;
+    }
+    .row2-para2{
+      font-size: 2rem;
+      max-width: 55%;
+    left: 18rem;
+  top: 14rem;
+
+    }
+    .row2-btn2{
+      top: 30rem;
+      left: 24rem;
+    
+
+    }
+  }
+  @media only screen and (min-width:992px) and (max-width:1200px){
+    .row1{
+      height:45rem ;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .row1-title{
+      top: 2.5rem;
+      font-size: 3.5rem;
+      right: 30rem;
+    }
+    .row1-header{
+      font-size: 4.2rem;
+      top: 7rem;
+      right: 10rem;
+    }
+    .row1-para{
+      font-size: 2rem;
+      max-width: 30%;
+    top: 32%;
+    right: 25%;
+  
+    }
+    .row1-btn{
+      top: 32rem;
+      right: 25rem;
+      font-size: 2rem;
+    
+    }
+    .row2{
+      height: 45rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .row2-title{
+      font-size: 3rem;
+      top: 3rem;
+      left: 10rem;
+    }
+    .row2-header{
+      font-size: 3.2rem;
+      left: 10rem;
+      top: 7rem;
+    }
+    .row2-para{
+      max-width: 35%;
+      font-size: 2rem;
+      left: 10rem;
+      top: 13rem;
+    }
+    .row2-btn{
+      left: 10rem;
+      top: 30rem;
+    }
+    .row1-title2{
+      top: 3rem;
+      font-size: 3.5rem;
+      right: 38%;
+    }
+    .row1-header2{
+      font-size: 3.0rem;
+      top: 17%;
+      right: 8%;
+    }
+    .row1-para2{
+      font-size: 2rem;
+      max-width: 35%;
+    top: 30%;
+    right: 22rem;
+    }
+    .row1-btn2{
+      top: 29rem;
+      right: 24rem;
+    }
+    .row2-title2{
+      top: 3rem;
+      font-size: 4rem;
+    left: 10rem;
+    }
+    .row2-header2{
+      font-size: 3.5rem;
+      top: 8rem;
+      left: 10rem;
+    }
+    .row2-para2{
+      font-size: 2rem;
+      max-width: 35%;
+    left: 10rem;
+    top: 14rem;
+
+    }
+    .row2-btn2{
+      top: 30rem;
+      left: 10rem;
+    }
+  }
+  @media only screen and (min-width:1200px) and (max-width:1500px){
+    .row1{
+      height:45rem ;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .row1-title{
+      top: 3.5rem;
+      font-size: 4rem;
+      right: 22rem;
+    }
+    .row1-header{
+      font-size: 4.2rem;
+      top: 9rem;
+      right: 13rem;
+    }
+    .row1-para{
+      font-size: 2.5rem;
+      max-width: 30%;
+    top: 35%;
+    right: 12%;
+  
+    }
+    .row1-btn{
+      top: 35rem;
+      right: 20rem;
+      font-size: 2rem;
+    
+    }
+    .row2{
+      height: 45rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .row2-title{
+      font-size: 4rem;
+      top: 3rem;
+      left: 12rem;
+    }
+    .row2-header{
+      font-size: 4.2rem;
+      left: 12rem;
+      top: 7rem;
+    }
+    .row2-para{
+      max-width: 35%;
+      font-size: 2.5rem;
+      left: 12rem;
+      top: 14rem;
+    }
+    .row2-btn{
+      left: 12rem;
+      top: 32rem;
+    }
+    .row1-title2{
+      top: 2rem;
+      font-size: 4rem;
+      right: 20%;
+    }
+    .row1-header2{
+      font-size: 4rem;
+      top: 15%;
+      right: 12%;
+      max-width: 30%;
+    }
+    .row1-para2{
+      font-size: 2.5rem;
+      max-width: 35%;
+    top: 42%;
+    right: 14rem;
+    }
+    .row1-btn2{
+      top: 35rem;
+      right: 20rem;
+    }
+    .row2-title2{
+      top: 3rem;
+      font-size: 4rem;
+    left: 12rem;
+    }
+    .row2-header2{
+      font-size: 4.5rem;
+      top: 8rem;
+      left: 12rem;
+    }
+    .row2-para2{
+      font-size: 2.5rem;
+      max-width: 35%;
+    left: 12rem;
+    top: 15rem;
+
+    }
+    .row2-btn2{
+      top: 33rem;
+      left: 12rem;
+    }
   
 
-  
+  }
+   

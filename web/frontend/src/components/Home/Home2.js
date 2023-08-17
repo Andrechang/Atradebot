@@ -51,8 +51,7 @@ export default function Home2() {
     <div className=" row2">
       <div className="">
         <h2 className=" row2-title">PEER TO PEER COMPETITON</h2>
-        <span className="row2-header">INVESTMENT</span><br />
-        <span className="row2-header">CHALLENGE</span>
+        <span className="row2-header">INVESTMENT CHALLENGE</span>
         <p className=" row2-para">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illo accusantium quas modi facere repudiandae labore iste itaque eligendi, placeat quis.</p>
         <Link to="/competing" className="row2-btn">
         EXPLORE CHALLENGE
@@ -66,17 +65,17 @@ export default function Home2() {
         <span className=" row1-header2">REWARDS BASED INVESTING</span>
 
         <p className=" row1-para2">Another featurette? Of course. More placeholder content here to give you an idea of how this layout would work with some actual real-world content in place.</p>
-        <Link to="/rewards" className="row1-btn">
+        <Link to="/rewards" className="row1-btn2">
         EXPLORE REWARDS
             </Link>
       </div>
     </div>
     <div className="row2">
       <div className="">
-        <h2 className="row2-title">LOREM ISPUM</h2>
-        <span className="row2-header">PAPER TRADING</span>
-        <p className=" row2-para">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illo accusantium quas modi facere repudiandae labore iste itaque eligendi, placeat quis.</p>
-        <Link to="/paper" className="row2-btn">
+        <h2 className="row2-title2">LOREM ISPUM</h2>
+        <span className="row2-header2">PAPER TRADING</span>
+        <p className=" row2-para2">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illo accusantium quas modi facere repudiandae labore iste itaque eligendi, placeat quis.</p>
+        <Link to="/paper" className="row2-btn2">
         EXPLORE TRADING
             </Link>
       </div>
