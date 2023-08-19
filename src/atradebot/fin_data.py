@@ -136,62 +136,6 @@ def generate_forecast_task(data):
         json.dump(file_data, outfile)
     return dataset
 
-
-def generate_allocation_task(data): 
-    """
-    generate dataset task to train a instruction to forecast model
-    also saves json dataset for lit-llama alpaca format
-
-    input: 
-            ## Instruction: What is the allocation suggestion given the news for ... 
-            ## Input: date, news snippet
-    output:
-            ## Response: allocation suggestion in percentage
-
-    Args:
-        data (huggingface dataset): dataset in hugginface format for raw news data
-
-    Returns:
-        huggingface dataset: dataset in hugginface format for allocation task
-    """    
-    news_date = []
-    stocks = []
-    prev_date = data['train'][0]['date']
-    file_data = []
-    for sample in data['train']:
-        if sample['date'].date() == prev_date.date():
-            news_date.append(sample)
-            stocks.append(sample['stock'])
-        else:
-            # choose collection of stocks news
-            num_news = 3
-            for i in range(0, len(stocks), num_news):
-                stocks_pick = stocks[i:i+num_news]
-                news_pick = news_date[i:i+num_news]
-                #get forecast and apply simple buy/sell strategy
-                rnd_alloc = utils.gen_rand_alloc(len(stocks_pick))
-                r_alloc = {}
-                for st, rr in zip(stocks_pick, rnd_alloc):
-                    r_alloc[st] = int(rr)
-                txt = ''
-                for s, n in zip(stocks_pick, news_pick):
-                    txt += utils.get_mentionedtext(s, n['text'], context_length=128)
-
-                #generate output based on allocation
-                file_data.append({
-                    'instruction': f"What is the allocation suggestion given the news for {stocks_pick}", 
-                    'input':f"{sample['date']} {txt}", 
-                    'output':f"{r_alloc}"})
-            prev_date = sample['date']
-            news_date = []
-            stocks = []
-
-    dataset = Dataset.from_pandas(pd.DataFrame(data=file_data))
-    with open("stock_alloc.json", "w") as outfile:
-        json.dump(file_data, outfile)
-    return dataset
-
-
 def generate_onestock_task(data, num_news = 3, portifolio_scenarios = 10, cash = 10000): 
     """
     generate dataset task to train a instruction to forecast model for one stock
@@ -291,12 +235,6 @@ if __name__ == "__main__":
     if args.stocks == 'sp500':
         sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
         stocks = sp500.Symbol.to_list()
-
-    dataset = load_dataset('achang/stock_nvda')
-    data_task = generate_onestock_task(dataset)
-    data_task.push_to_hub('achang/stocks_one_nvda_v2')
-    exit(1)
-
 
     #collect news data
     dataset = gen_news_dataset(stocks, args.start_date, args.end_date, 

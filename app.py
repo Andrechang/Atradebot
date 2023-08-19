@@ -6,9 +6,6 @@ st.markdown(
     """
     Click on the pages on the left to navigate through different parts of atradebot.
 
-    ### [App](/page0): 
-    App to recommend stocks based on saved portfolio
-
     ### [Tests](/page1): 
     Test different strategies and models:
     1. SimpleStrategy: Test average cost strategy and sharpe allocation
