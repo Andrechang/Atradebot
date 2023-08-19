@@ -7,7 +7,9 @@ export default function Home2() {
   return (
     <div className='home'>
       <div className="body">
+        <img className="background-icon" alt="" src="/background.svg" />
         <div className="box">
+
         <h2 className='home-h2'>Welcome To</h2>
         <h1 className='home-h1'>WISEBUCK.AI</h1>
         <p className='home-h31'><i>The personal assistant for your</i></p>

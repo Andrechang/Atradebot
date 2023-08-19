@@ -1,9 +1,26 @@
 
-.body {
+/* .body {
     background-color: rgba(0, 101, 194, 1);
+    background: linear-gradient(180deg, rgb(0, 101, 194) 0%, rgb(134.94, 233.39, 255) 100%);
+    background: linear-gradient(135deg, #0065C2 0%, #87E9FF 100%);
+    background: linear-gradient(180deg, rgb(0, 101, 194) 0%, rgb(134.94, 233.39, 255) 100%);
+    background: linear-gradient(180deg, rgb(0, 31.78, 61.62) 0%, rgb(0, 101, 194) 100%);
+    background: linear-gradient(180deg, rgb(0, 0, 0) 0%, rgb(0, 32, 62) 100%);
+    background: linear-gradient(180deg, rgb(135, 233, 255) 0%, rgb(0, 0, 0) 100%);
+    animation: harry 5s ease-in-out 1s 2; 
+    background: linear-gradient(135deg, #0065C2 0%, #87E9FF 100%);
+  
+
+
+
     clip-path: polygon(0 0, 100% 0, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
     height: 70rem;
-      }
+      } */
+
+     .background-icon{
+      height: 88.5rem;
+      margin-top: 0px;      
+     }
   
   .box {
     display: flex;
@@ -15,7 +32,7 @@
   }
   
   .home-h2 {
-    margin-top: 4rem;
+    margin-top: -125rem;
     font-size: 3.8rem;
     margin-bottom: 1.5rem;
   }
@@ -76,7 +93,7 @@
     flex-wrap: wrap;
   }
   .mission-title{
-    margin-top: 7rem;
+    margin-top: -7rem;
     color: #0065C2;
     font-family: "Inter", Helvetica;
     letter-spacing: 0.3rem;
