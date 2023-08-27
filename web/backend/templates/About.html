@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    table {
+        width: 100%;
+        margin: 0%;
+    }
+
+    td {
+        border: 1px solid black;
+    }
+</style>
+
+<div style="margin: 25px">
+    <h2>Name</h2>
+    <p>{{user_info['_id']}}</p>
+
+    <h2>Balance</h2>
+    <p>{{user_info['balance']}}</p>
+
+    <h2>Portfolio Value</h2>
+    <p>{{user_info['portfolio_value']}}</p>
+
+    <h2>Portfolio</h2>
+
+    <table>
+        <tr>
+            <td>Symbol</td>
+            <td>Total Volume</td>
+            <td>Average Price</td>
+            <td>Current Price</td>
+        </tr>
+        {% for i in user_info['portfolio'].keys() %}
+        <tr>
+            <td>{{i}}</td>
+            <td>{{user_info['portfolio'][i]['volume']}}</td>
+            <td>{{user_info['portfolio'][i]['price']}}</td>
+            <td id={{i}}></td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <br>
+
+    <h2>Trades</h2>
+
+    <table>
+        <tr>
+            <td>Symbol</td>
+            <td>Bought Volume</td>
+            <td>Bought Price</td>
+            <td>Bought Date</td>
+            <td>Process</td>
+        </tr>
+        {% for i in user_info['trades'] %}
+        <tr>
+            <td>{{i['symbol']}}</td>
+            <td>{{i['volume']}}</td>
+            <td>{{i['price']}}</td>
+            <td>{{i['time']}}</td>
+            <td>{{i['type']}}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</div>
+
+<script>
+
+    symbols = Object.keys(JSON.parse('{{user_info["portfolio"]|tojson}}'));
+
+    function requestData() {
+        for (let i = 0; i < symbols.length; i++) {
+            var requests = $.get('/get_stock/' + symbols[i]);
+            var tm = requests.done(function (result) {
+                console.log(symbols[i])
+                document.getElementById(symbols[i]).innerHTML = result[1];
+            });
+        }
+        setTimeout(requestData, 5000);
+    }
+
+    requestData();
+
+</script>
+
+{% endblock %}
