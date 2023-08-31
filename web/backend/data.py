@@ -2,7 +2,7 @@
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
 
-from Stocks import current_price
+from stocks import current_price
 from user import User
 
 client = MongoClient(

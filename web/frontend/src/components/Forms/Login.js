@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import './Login.css';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 
 const LoginPage = () => {
@@ -60,32 +60,30 @@ const LoginPage = () => {
 
   return (
     <div className="login-container">
-      <h2 >Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="username">Username:</label> <br />
-          <input
-            type="text"
-            id="username"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password:</label> <br />
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <button type="submit">Login</button>
+      <h2 className='login-header' >Login</h2>
+      <form onSubmit={handleSubmit} className='form-controller'>
+          
+<div class="input-container">
+    <i class="fa fa-user icon"></i>
+    <input class="input-field" type="text" placeholder="Please enter your Username" name="username"
+     value={formData.username}
+     onChange={handleChange}
+     required/>
+  </div>
+ 
+  
+  <div class="input-container">
+    <i class="fa fa-key icon"></i>
+    <input class="input-field" type="password" placeholder="Please enter your Password" name="password"
+     value={formData.password}
+     onChange={handleChange}
+     required/>
+  </div>        
+        <button type="submit" className='form-login-btn'>Login</button>
       </form>
+      <h4 className='account'>Don't have an account? <Link to="/signup" className="account-btn">
+              SIGN UP
+            </Link></h4>
     </div>
   );
 };
