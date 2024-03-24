@@ -1,11 +1,15 @@
 # train a neural net model on Yahoo Finance data API, Google News
+# from: https://huggingface.co/dfurman/falcon-40b-chat-oasst1/blob/main/finetune_falcon40b_oasst1_with_bnb_peft.ipynb
+# https://huggingface.co/blog/falcon
+# https://colab.research.google.com/drive/1n5U13L0Bzhs32QO_bls5jwuZR62GPSwE?usp=sharing
 
 import os
 
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import transformers
 from datasets import load_dataset
+from peft import PeftModel, PeftConfig, get_peft_model, LoraConfig, LoraConfig, prepare_model_for_kbit_training
 from tqdm import tqdm
 from argparse import ArgumentParser
 from torch.utils.data.dataloader import DataLoader
@@ -17,7 +21,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-OUTFOLDER = 'exp'
+OUTFOLDER = 'exp4'
 IGNORE_INDEX = -100
 MICRO_BATCH_SIZE = 4  # change to 4 for 3090
 BATCH_SIZE = 16
@@ -114,11 +118,64 @@ def get_slm_model(model_name):
     tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer
 
+def get_lrg_model(model_name, mode='eval'):
+    """get a model with peft 
+    :param model_id: id of model from huggingface
+    :type model_id: str
+    :param mode: eval or train mode, defaults to 'eval'
+    :type mode: str, optional
+    :return: model, tokenizer
+    :rtype: peft ModelForCausalLM, Tokenizer
+    """    
+    if mode == 'eval':
+        config = PeftConfig.from_pretrained(model_name)
+        adapter_name = model_name
+        model_name = config.base_model_name_or_path
+    else:
+        config = LoraConfig(
+            r=8, 
+            lora_alpha=32, 
+            target_modules=["query_key_value"], #gpt_neox
+            lora_dropout=0.05, 
+            bias="none", 
+            task_type="CAUSAL_LM"
+        )
+    #load model and tokenizer with quantization
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16
+    )
+    tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side="left")
+    tokenizer.pad_token = tokenizer.eos_token
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name, 
+        quantization_config=bnb_config, 
+        device_map="auto",
+        trust_remote_code=True)
+    #setup lora
+    if mode == 'eval':
+        model = PeftModel.from_pretrained(model, adapter_name)
+    else:
+        model.gradient_checkpointing_enable()
+        model = prepare_model_for_kbit_training(model)
+        model = get_peft_model(model, config)
+
+    return model, tokenizer
+
+
 def train_model(args):
     if args.mode == 'train':
-        model, tokenizer = get_slm_model("gpt2")
+        if args.modeltype == 'small':
+            model, tokenizer = get_slm_model("gpt2")
+        else:
+            model, tokenizer = get_lrg_model("databricks/dolly-v2-7b", mode='train')
     else:
-        model, tokenizer = get_slm_model(args.mhub)
+        if args.modeltype == 'small':
+            model, tokenizer = get_slm_model(args.mhub)
+        else:
+            model, tokenizer = get_lrg_model(args.mhub)
         model.eval()
 
     #get data
@@ -136,6 +193,7 @@ def train_model(args):
 
     #train: sequence of text and predict next token
     training_args = transformers.TrainingArguments(
+        # auto_find_batch_size=True,
         per_device_train_batch_size=MICRO_BATCH_SIZE,
         gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
         num_train_epochs=50,
@@ -147,6 +205,9 @@ def train_model(args):
         logging_steps=4,
         output_dir=os.path.join(OUTFOLDER, "outputs"),
         save_strategy='epoch',
+        # optim="paged_adamw_8bit",
+        # lr_scheduler_type = 'cosine',
+        # evaluation_strategy = 'epoch',
         warmup_ratio = 0.01,
     )
 
@@ -215,6 +276,8 @@ def get_parser(raw_args=None):
                         help='to reload checkpoint')
     parser.add_argument('--mode', type=str, default='eval',
                         help='train or eval')   
+    parser.add_argument('--modeltype', type=str, default='small',
+                        help='small or large')   
     parser.add_argument('-d', '--dhub', type=str,
                         default='achang/stocks_one_nvda_v2', help='get from hub folder name for task dataset')
     parser.add_argument('-m', '--mhub', type=str,

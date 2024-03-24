@@ -122,7 +122,7 @@ class FinForecastStrategy:
         self.days_interval = delta.days/len(self.cash) #rebalance 4 times
         self.data = data['Adj Close']
 
-        self.model, self.tokenizer = fin_train.get_slm_model(model_id)
+        self.model, self.tokenizer = fin_train.get_lrg_model(model_id)
         self.model.to(device)
 
     def model_run(self, date, num_news=5):
@@ -282,7 +282,8 @@ class FinOneStockStrategy:
         self.days_interval = delta.days/len(self.cash) #rebalance 4 times
         self.data = data['Adj Close']
 
-        self.model, self.tokenizer = fin_train.get_slm_model(model_id)
+        # self.model, self.tokenizer = fin_train.get_slm_model(model_id)
+        self.model, self.tokenizer = fin_train.get_lrg_model(model_id)
         self.model.to(device)
         self.news_src = news_src
 
