@@ -5,7 +5,7 @@
 import datetime
 import dateparser
 import sqlalchemy as db
-from db import create_db
+from db_stocks import create_db
 from sentiment_utils import get_sentiment, sentiment_analyzer
 from utils import DATE_FORMAT
 from news_utils import get_google_news

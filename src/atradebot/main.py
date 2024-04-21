@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import shutil
 
-from atradebot.utils import is_business_day, business_days
+from atradebot.utils import business_days
 from atradebot.utils import get_config, get_price, pd_append, DATE_FORMAT
 from atradebot import news_utils
 

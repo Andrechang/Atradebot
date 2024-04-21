@@ -10,18 +10,50 @@ from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 
-
 TextEmbeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 DATE_FORMAT = "%Y-%m-%d"
 
-
 def is_business_day(date):
+    """check if date is a business day
+
+    :param date: date to check
+    :type date: datetime.date
+    :return: if date is a business day
+    :rtype: bool
+    """    
     return bool(len(pd.bdate_range(date, date)))
 
+def find_business_day(start_date, num_days):
+    """add or subtract days from start_date and find the next business day
+
+    :param start_date: date to start from
+    :type start_date: datetime.date
+    :param num_days: number of days to add/subtract
+    :type num_days: int
+    :return: output date
+    :rtype: datetime.date
+    """ 
+    out_date = start_date + timedelta(days=num_days)
+    while not is_business_day(out_date):
+        if num_days < 0:
+            out_date -= timedelta(days=1)
+        else:
+            out_date += timedelta(days=1)
+        
+    return out_date
 
 #add/subtract business days
 def business_days(start_date, num_days):
+    """add or subtract business days from start_date
+
+    :param start_date: date to start from
+    :type start_date: datetime.date
+    :param num_days: number of days to add/subtract
+    :type num_days: int
+    :return: output date
+    :rtype: datetime.date
+    """    
     current_date = start_date
     business_days_added = 0
     while business_days_added < abs(num_days):
@@ -35,6 +67,15 @@ def business_days(start_date, num_days):
 
 
 def pd_append(df, dict_d):
+    """append dictionary to dataframe
+
+    :param df: pandas dataframe
+    :type df: pandas.DataFrame
+    :param dict_d: dictionary to append
+    :type dict_d: dict
+    :return: pandas dataframe with appended dictionary
+    :rtype: pandas.DataFrame
+    """ 
     return pd.concat([df, pd.DataFrame.from_records([dict_d])])
 
 

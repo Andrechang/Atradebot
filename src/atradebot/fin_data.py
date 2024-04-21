@@ -292,10 +292,10 @@ if __name__ == "__main__":
         sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
         stocks = sp500.Symbol.to_list()
 
-    dataset = load_dataset('achang/stock_nvda')
-    data_task = generate_onestock_task(dataset)
-    data_task.push_to_hub('achang/stocks_one_nvda_v2')
-    exit(1)
+    # dataset = load_dataset('achang/stock_nvda')
+    # data_task = generate_onestock_task(dataset)
+    # data_task.push_to_hub('achang/stocks_one_nvda_v2')
+    # exit(1)
 
 
     #collect news data
