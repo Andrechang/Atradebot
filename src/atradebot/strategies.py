@@ -11,7 +11,7 @@ import re
 import torch
 import numpy as np
 from atradebot.utils import DATE_FORMAT
-from atradebot import fin_train, news_utils, utils
+from atradebot import fin_train, utils, utils_news
 import yfinance as yf
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -141,7 +141,7 @@ class FinForecastStrategy:
 
         all_stocks = {}
         for stock in self.stocks:
-            news = news_utils.get_news(stock=stock, time_period=[start, end], num_results=num_news, news_source='google')
+            news = utils_news.get_news(stock=stock, time_period=[start, end], num_results=num_news, news_source='google')
             if not news:
                 print(f"No news for {stock} on dates: {start} to {end}. Source: google")
                 continue
@@ -311,7 +311,7 @@ class FinOneStockStrategy:
             corp_info = yf.Ticker(stock).info
             stock_price = prices[stock]
             #get news
-            news = news_utils.get_news(stock, [start, end], num_news, self.news_src)
+            news = utils_news.get_news(stock, [start, end], num_news, self.news_src)
             if not news:
                 print(f"No news for {stock} on dates: {start} to {end}. Source: {self.news_src}")
                 continue

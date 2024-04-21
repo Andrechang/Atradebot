@@ -3,7 +3,7 @@
 import json
 import sqlalchemy as db
 from atradebot.db import create_db
-from atradebot.news_utils import get_google_news
+from atradebot.utils_news import get_google_news
 
 # setup db:
 engine, connection, stocks, dates, news, sentiments = create_db()

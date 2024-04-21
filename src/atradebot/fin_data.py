@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 import pandas as pd
 import yfinance as yf
 import numpy as np
-from atradebot import main, news_utils, utils
+from atradebot import main, utils, utils_news
 from datasets import Dataset
 import time
 import json
@@ -95,7 +95,7 @@ def gen_news_dataset(stocks, start_date, end_date, num_news=5, sample_mode = 'sp
             start = start.strftime(main.DATE_FORMAT)
             end = main.business_days(event, +1)#one day after
             end = end.strftime(main.DATE_FORMAT)
-            news = news_utils.get_news(stock, [start, end], num_news, news_source)
+            news = utils_news.get_news(stock, [start, end], num_news, news_source)
             if not news:
                 continue
             all_news += news

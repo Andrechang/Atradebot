@@ -8,7 +8,7 @@ import sqlalchemy as db
 from db_stocks import create_db
 from sentiment_utils import get_sentiment, sentiment_analyzer
 from utils import DATE_FORMAT
-from news_utils import get_google_news
+from atradebot.utils_news import get_google_news
 from stocks_lists import stocks_list_all
 
 
