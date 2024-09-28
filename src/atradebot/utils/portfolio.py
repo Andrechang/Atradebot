@@ -114,6 +114,6 @@ if __name__ == "__main__":
     # data = yf.download('AAPL', start="2020-03-15", end="2022-07-15")
     # test_stochRSI(data)
 
-    portifolio = Portfolio('FILES/positions.csv')
+    portifolio = Portfolio('')
     beta, alpha = portifolio.calc_beta()
     print(beta, alpha)

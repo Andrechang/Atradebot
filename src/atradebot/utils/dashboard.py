@@ -11,7 +11,7 @@ pd.options.mode.copy_on_write = True
 
 
 
-import atradebot.portfolio as portfolio 
+import atradebot.utils.portfolio as portfolio 
 
 
 # TODO:
@@ -27,7 +27,7 @@ import atradebot.portfolio as portfolio
 def get_dashboard():
     
     # get portfolio
-    portifolio = portifolio.Portfolio('FILES/positions.csv')
+    portifolio = portifolio.Portfolio('')
     beta, alpha = portifolio.calc_beta()
     #search for etfs:
     # etfs = stocks_lst[stocks_lst['Ticker'].str.contains('-')]
