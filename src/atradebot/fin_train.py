@@ -274,14 +274,14 @@ def get_parser(raw_args=None):
     parser = ArgumentParser(description="train model")
     parser.add_argument('--reload', action="store_true",
                         help='to reload checkpoint')
-    parser.add_argument('--mode', type=str, default='eval',
+    parser.add_argument('--mode', type=str, default='train',
                         help='train or eval')   
-    parser.add_argument('--modeltype', type=str, default='small',
+    parser.add_argument('--modeltype', type=str, default='large',
                         help='small or large')   
     parser.add_argument('-d', '--dhub', type=str,
-                        default='achang/stocks_one_nvda_v2', help='get from hub folder name for task dataset')
+                        default='achang/stocks_one_nvda_v3_weekly', help='get from hub folder name for task dataset')
     parser.add_argument('-m', '--mhub', type=str,
-                        default='achang/fin_falcon7b_one_nvda_v2', help='push to hub folder model')
+                        default='achang/fin_dolly7b_one_nvda_v3_weekly', help='push to hub folder model')
     args = parser.parse_args(raw_args)
     return args
 

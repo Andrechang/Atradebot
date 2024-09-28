@@ -213,7 +213,7 @@ def generate_onestock_task(data, num_news = 3, portifolio_scenarios = 10, cash =
     stock_id = data['train'][0]['stock'] #analysis of one stock only
     corp_info = yf.Ticker(stock_id).info
     prev_date = data['train'][0]['date']
-    invest_interval = 21 #check invest every week days
+    invest_interval = 7 #check invest every week days
     file_data = []
     for sample in data['train']:
         if sample['date'].date() == prev_date.date(): 
