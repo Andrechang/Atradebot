@@ -29,3 +29,6 @@ pmdarima
 gitpython
 alpaca-py
 
+atradebot @ git+https://github.com/Andrechang/Atradebot.git
+sphinx_rtd_theme
+

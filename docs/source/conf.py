@@ -9,7 +9,7 @@
 project = 'atradebot'
 copyright = '2023, atradebot'
 author = 'atradebot'
-release = '0.1'
+release = '0.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -19,6 +19,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx.ext.napoleon',
 ]
 
 templates_path = ['_templates']
