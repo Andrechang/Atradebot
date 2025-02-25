@@ -21,7 +21,7 @@ trafilatura
 finnhub-python
 openai
 sentence-transformers
-gpt-researcher @ git+https://github.com/assafelovic/gpt-researcher.git
+# gpt-researcher @ git+https://github.com/assafelovic/gpt-researcher.git
 PyPortfolioOpt
 diskcache
 statsmodels

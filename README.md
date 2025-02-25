@@ -45,6 +45,8 @@ if errors do:
 pip install --upgrade pip
 ```
 
+Install gpt-researcher: `https://github.com/assafelovic/gpt-researcher.git`
+
 ## Regression test
 
 `pytest -m "test" tests/test_main.py`
