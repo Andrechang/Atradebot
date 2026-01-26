@@ -5,7 +5,7 @@ from atradebot.strategies.strategy import Strategy, StrategyConfig
 from atradebot.strategies import register_strategy
 from atradebot.utils.utils import find_business_day
 from atradebot.data.yf_data import get_yf_data_some
-from atradebot.params import DATE_FORMAT
+from atradebot.config import DATE_FORMAT
 from datetime import datetime
 import random
 # Define a simple strategy that allocates 50% of the portfolio on the first day

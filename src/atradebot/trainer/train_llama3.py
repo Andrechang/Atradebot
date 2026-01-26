@@ -26,8 +26,8 @@ from atradebot.data.llm_prompt import format_chat_template
 torch_dtype = torch.float16
 attn_implementation = "eager"
 BASEMODEL = "meta-llama/Llama-3.2-3B-Instruct"
-LORAMODEL = "achang/llama-3.2-3b_lora"
-DATASET_NAME = "achang/test_stock"
+LORAMODEL = "llama-3.2-3b_lora"
+DATASET_NAME = "test_stock"
 RESPONSE_TOKENS = '<|start_header_id|>assistant<|end_header_id|>\n\n'
 
 def find_all_linear_names(model):

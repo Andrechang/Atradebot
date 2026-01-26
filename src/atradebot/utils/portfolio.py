@@ -7,7 +7,7 @@ from scipy import stats
 from argparse import ArgumentParser
 from datetime import datetime, date
 import random
-from atradebot.params import DATE_FORMAT, ROOT_D
+from atradebot.config import DATE_FORMAT, ROOT_D
 from atradebot.utils.utils import find_business_day, get_datetime
 from atradebot.data.yf_data import get_yf_data_some, get_price
 

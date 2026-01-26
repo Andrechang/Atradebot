@@ -8,8 +8,8 @@ from argparse import ArgumentParser
 import datasets
 from datasets import Dataset
 from atradebot.data.yf_data import get_yf_data_some, get_yf_detail
-from atradebot.utils.utils import find_peaks_valleys, filter_points
-from atradebot.params import DATE_FORMAT
+from atradebot.utils.explainutils import filter_events, find_peaks_valleys
+from atradebot.config import DATE_FORMAT
 from atradebot.utils.utils import find_business_day
 from datetime import datetime
 import pandas as pd
@@ -107,7 +107,7 @@ def collect_events(stock:str, past_date:str, present_date:str, ret=False):
     # collect when to gather news
     p, v = find_peaks_valleys(data_mean)
     # index of data_mean that are peaks and valleys
-    peak_idx, valley_idx = filter_points(data_mean, p, v) 
+    peak_idx, valley_idx = filter_events(data_mean, p, v) 
     events = peak_idx + valley_idx #concat lists
     events += [2] # add second day as first event to collect news
     events.sort()

@@ -5,7 +5,7 @@ import os
 from argparse import ArgumentParser
 import matplotlib.pyplot as plt
 from datetime import datetime
-from atradebot.params import DATE_FORMAT, ROOT_D
+from atradebot.config import DATE_FORMAT, ROOT_D
 from atradebot.utils.portfolio import Portfolio, test_portfolio
 from atradebot.strategies import get_strategy
 from atradebot.utils.utils import find_business_day, get_datetime, plot_stock
@@ -223,6 +223,36 @@ def backtest(
 
     print(portfolio_value)
     print(backtester.portfolio)
+
+# check current portfolio stocks that could go up/down
+def manage(args:StrategyConfig, portfolio_path):
+    # get current portfolio
+    """
+    Manage a portfolio using a given strategy configuration.
+
+    Args:
+        args (StrategyConfig): An object containing configuration settings for the strategy.
+        portfolio_path (str): The file path to the portfolio data.
+
+    Returns:
+        None
+
+    Calls:
+        Backtester: An instance of the Backtester class for managing the portfolio.
+        gen_report: A function to generate a report based on the backtester results.
+
+    Raises:
+        N/A
+    """    
+    backtester = Backtester(portfolio_path, args=args, zero=False)   
+    future_days = [30, 120, 360]
+    pred_result = backtester.rank_predict(args.present_date, future_days)
+    print(pred_result)
+    if args.run_trade:
+        action = backtester.strategy.generate_allocation()
+        print('Trade Action: ', action)
+    return backtester
+
 
 def get_args(raw_args=None):
     """

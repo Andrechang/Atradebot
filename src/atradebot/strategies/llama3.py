@@ -8,7 +8,7 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextStreamer
 from atradebot.data.yf_data import get_yf_data_some
-from atradebot.params import DATE_FORMAT
+from atradebot.config import DATE_FORMAT
 from atradebot.strategies import register_strategy
 from atradebot.strategies.strategy import Strategy
 from atradebot.utils.utils import find_business_day, extract_last_number

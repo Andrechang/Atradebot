@@ -1,7 +1,7 @@
 # get historical OHLCV data from yfinance
 import pandas as pd
 import os
-from atradebot.params import YFCACHE, FHUB_API
+from atradebot.config import YFCACHE, FHUB_API
 import yfinance as yf
 import finnhub
 from tenacity import retry, stop_after_attempt, wait_fixed

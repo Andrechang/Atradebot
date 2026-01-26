@@ -18,8 +18,7 @@ import traceback
 from datasets import load_dataset
 from gpt_researcher import GPTResearcher
 import asyncio
-from atradebot.params import NEWSCACHE
-from atradebot.params import DATE_FORMAT, FHUB_API, HF_DATASET
+from atradebot.config import *
 
 
 LOADED_DATASET = load_dataset(HF_DATASET, split='train')

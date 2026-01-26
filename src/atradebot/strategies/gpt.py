@@ -3,7 +3,7 @@
 import torch
 import re
 from openai import OpenAI
-from atradebot.params import OPENAI_API, DATE_FORMAT, ALLTICKS
+from atradebot.config import OPENAI_API, DATE_FORMAT, ALLTICKS
 from datetime import datetime
 from atradebot.data.yf_data import get_yf_data_some, get_yf_data_all
 from atradebot.data.llm_prompt import LLM_INSTRUCTION, construct_prompt
